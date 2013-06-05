@@ -14,6 +14,9 @@ elen = nl +1;
 gain = ng;
 ierr = 0.0f;
 
+ymin = 0.0f;
+ymax = 0.0f;
+
 x = (float*) calloc(xlen,sizeof(float));
 y = (float*) calloc(ylen,sizeof(float));
 e = (float*) calloc(elen,sizeof(float));
@@ -38,7 +41,20 @@ gain = ng;
 float PID::getGain(void){
 return gain;
 
-}//geGain
+}//getGain
+
+void PID::setH(float nh){
+
+h = nh;
+
+}//setH
+
+
+
+float PID::getH(void){
+return h;
+
+}//getH
 
 void PID::setIerr(float nerr){
 ierr = nerr;
@@ -70,11 +86,43 @@ ci = (ci+1) % elen;
 
 yn *= gain;
 
+if(!((ymin == 0.0f) && (ymax == 0.0f))){
+
+	if(yn <= ymin){
+
+		yn = ymin;
+
+	}else if(yn >= ymax){
+		yn = ymax;
+	}
+
+}
+
 y[ai] = yn;
 ai = (ai + 1) % ylen;
 return yn;
 
 }//step
+
+
+void PID::reset(void){
+
+ ierr = 0.0f;
+
+for(int i= 0; i < xlen;i++){
+x[i] = 0.0f;
+}
+
+
+for(int i= 0; i < elen;i++){
+e[i] = 0.0f;
+}
+
+for(int i= 0; i < ylen;i++){
+y[i] = 0.0f;
+}
+
+}
 
 float PID::getX(int8_t idx){
 	if(idx >= xlen){
@@ -100,4 +148,14 @@ idx = elen-1;
 
 return e[(int)(((ci - idx - 1)<0)?(elen + (ci - idx -1)):(ci - idx -1))];
 }//getE
+
+void PID::setOutputLimits(float min , float max){ // min==max==0 -> no limit
+if(max < min)return;
+
+ymin = min;
+ymax = max;
+
+
+}
+
 

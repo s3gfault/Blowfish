@@ -20,9 +20,16 @@ void setIerr(float);
 void setGain(float);
 float getGain(void);
 
+void setH(float);
+float getH(void);
+
 float getX(int8_t idx);
 float getY(int8_t idx);
 float getE(int8_t idx);
+
+void reset(void);
+
+void setOutputLimits(float,float);
 
 float *x;
 float *y;
@@ -45,5 +52,8 @@ int8_t ci;
 int8_t xlen;
 int8_t ylen;
 int8_t elen;
+
+float ymin;
+float ymax;
 
 };

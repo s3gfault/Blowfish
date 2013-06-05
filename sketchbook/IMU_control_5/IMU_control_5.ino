@@ -51,6 +51,7 @@ volatile byte imuready = 0;
 volatile byte magnready = 0;
 volatile byte motcont = 0;
 volatile byte ultsready = 0;
+volatile byte serialready = 0;
 
 volatile uint16_t ovfcnt = 0;
 volatile uint8_t ovfcnt2 = 0;
@@ -200,9 +201,12 @@ IMUFilt;
 #define PID_MOT_RL_KP 1.0f
 #define PID_MOT_RL_KI 0.0f
 #define PID_MOT_RL_KD 0.0f
+
 #define PID_MOT_RL_GAIN PID_GAIN
 #define PID_MOT_RL_H PID_H
 
+#define PID_MOT_RL_LIM_MIN -255.0f
+#define PID_MOT_RL_LIM_MAX 255.0f
 
 
 float pid_mot_rl[3] = {
@@ -211,21 +215,46 @@ float pid_mot_rl[3] = {
 PID pid_rl(pid_mot_rl,PID_MOT_RL_GAIN,3,PID_MOT_RL_H);
 
 
-#define PID_MOT_ALT_KP 5.9f
+#define PID_MOT_ALT_KP 0.9f
 #define PID_MOT_ALT_KI 0.0f
 #define PID_MOT_ALT_KD 0.0f
+
+#define PID_MOT_ALT_AGGRO_KP 5.0f
+#define PID_MOT_ALT_AGGRO_KI 0.0f
+#define PID_MOT_ALT_AGGRO_KD 0.0f
+
+#define PID_MOT_ALT_CONSERVATIVE_KP 0.3f
+#define PID_MOT_ALT_CONSERVATIVE_KI 0.0f
+#define PID_MOT_ALT_CONSERVATIVE_KD 0.0f
+
+#define PID_MOT_AGGRO_LIM 40.0f
+#define PID_MOT_NORMAL_LIM 20.0f
+#define PID_MOT_CONSERVATIVE_LIM 0.0f
+
+
+
 #define PID_MOT_ALT_GAIN PID_GAIN
 #define PID_MOT_ALT_H PID_H
 
+#define PID_MOT_ALT_LIM_MIN -255.0f
+#define PID_MOT_ALT_LIM_MAX 255.0f
 
-float * pid_mot_alt = pid_mot_rl;
+
+float  pid_mot_alt[3] ={
+  PID_MOT_ALT_KP,PID_MOT_ALT_KI,PID_MOT_ALT_KD};
+
+float pid_mot_alt_aggro[3] = { 
+  PID_MOT_ALT_AGGRO_KP,PID_MOT_ALT_AGGRO_KI,PID_MOT_ALT_AGGRO_KD};
+
+float  pid_mot_alt_conservative[3] ={
+  PID_MOT_ALT_CONSERVATIVE_KP,PID_MOT_ALT_CONSERVATIVE_KI,PID_MOT_ALT_CONSERVATIVE_KD};
 
 PID pid_alt(pid_mot_alt,PID_MOT_ALT_GAIN,3,PID_MOT_ALT_H);
 
 //control parameters
 
-float rl_ang = 0.0f;
-
+float reg_set_rl_ang = 0.0f;
+float reg_set_h = 150.0f;
 
 
 //motor controls
@@ -356,6 +385,10 @@ AFS_SEL Full Scale Range LSB Sensitivity
   setImuStruct(&gyAng,0.0f,0.0f,0.0f);
   setImuStruct(&gf,0.0f,0.0f,0.0f);
   setImuStruct(&af,0.0f,0.0f,0.0f);
+
+  pid_alt.setOutputLimits(PID_MOT_ALT_LIM_MIN,PID_MOT_ALT_LIM_MAX);
+  pid_rl.setOutputLimits(PID_MOT_RL_LIM_MIN,PID_MOT_RL_LIM_MAX);
+
   t4 =  micros() - t4;
 }
 
@@ -416,9 +449,9 @@ void loop() {
 
 
     //integrate
-#define GYRO_INT_THRES_X 0.4f
-#define GYRO_INT_THRES_Y 0.4f
-#define GYRO_INT_THRES_Z 0.4f
+#define GYRO_INT_THRES_X 0.5f
+#define GYRO_INT_THRES_Y 0.5f
+#define GYRO_INT_THRES_Z 0.5f
 
 
 #if INTEGRATION == SIMPSON
@@ -598,10 +631,10 @@ void loop() {
       ultrasonic.update();
 
       ultsread = 1;
-      
+
     }
 
-      
+
 
   }//ultsready
 
@@ -609,24 +642,59 @@ void loop() {
   /*----------------------------------------------------------------------------------------------------------------------------*/
 
 
+  if(serialready){
+
+
+
+    //serial codes
+
+
+  }//serialready
+
+  /*----------------------------------------------------------------------------------------------------------------------------*/
+
   if(motcont){
 
-    dbg1f = pid_rl.step(rl_ang,gyAngSimp.z);
+    dbg1f = pid_rl.step(reg_set_rl_ang,gyAngSimp.z);
     setMotDirection(deg2rad(dbg1f),50);
 
-//setMotSpeed(0,MOT_R_IN1_PIN,MOT_R_IN2_PIN,MOT_R_PWM_PIN);
- //setMotSpeed(0,MOT_L_IN1_PIN,MOT_L_IN2_PIN,MOT_L_PWM_PIN);
-// setMotSpeed(-100,MOT_ALT_IN1_PIN,MOT_ALT_IN2_PIN,MOT_ALT_PWM_PIN);
+    //setMotSpeed(0,MOT_R_IN1_PIN,MOT_R_IN2_PIN,MOT_R_PWM_PIN);
+    //setMotSpeed(0,MOT_L_IN1_PIN,MOT_L_IN2_PIN,MOT_L_PWM_PIN);
+    // setMotSpeed(-100,MOT_ALT_IN1_PIN,MOT_ALT_IN2_PIN,MOT_ALT_PWM_PIN);
+    reg_set_h = 150.0f;
+    // setMotDirection(0.0f,-50);
+    
+    float e = abs(reg_set_h - ults_h);
+    
+    
+    if(e > PID_MOT_AGGRO_LIM){
 
-     // setMotDirection(0.0f,-50);
-    dbg2f = pid_alt.step(150,ults_h);
+      pid_alt.setCoeffs(pid_mot_alt_aggro);
+
+    }
+    else if(e> PID_MOT_NORMAL_LIM){
+
+      pid_alt.setCoeffs(pid_mot_alt);
+    }
+    else {
+
+      pid_alt.setCoeffs(pid_mot_alt_conservative);
+    }
+
+    dbg2f = pid_alt.step(reg_set_h,ults_h);
     setMotAlt((int)dbg2f);
-//    setMotAlt(100);
+
+    // setImuStruct(&gyAngSimp,gyAngSimp.x,gyAngSimp.y,0.0f); // reset gyro
+
+    //    setMotAlt(100);
 
   }//motcont
 
 
   /*----------------------------------------------------------------------------------------------------------------------------*/
+
+
+
   if(prready){
     // digitalWrite(DBGPIN,1);
 #if DBGOUTMODE == 1
@@ -685,6 +753,7 @@ void loop() {
     t3 = micros() - t3;
     Serial.print("Loop:\t");
     Serial.print(t3);
+
 
 
     Serial.println();
@@ -887,11 +956,11 @@ void loop() {
 
     Serial.flush();
 #elif DBGOUTMODE == 7
-    
+
     Serial.print("h raw:\t");
     Serial.print(ults_h_raw);
     Serial.print("\t");
-  
+
     Serial.print("h:\t");
     Serial.print(ults_h);
     Serial.print("\t");
@@ -999,7 +1068,7 @@ void setMotDirection(float angl,int sp0){
 void setMotAlt(int sp0){
 #define MOT_ALT_THRES 5
 
-    sp0 = constrain(sp0,-255,255);
+  sp0 = constrain(sp0,-255,255);
 
   if(abs(sp0) <= MOT_ALT_THRES){
     sp0=0;
@@ -1049,6 +1118,8 @@ int freeRam () {
   int v; 
   return (int) &v - (__brkval == 0 ? (int) &__heap_start : (int) __brkval); 
 }
+
+
 
 ISR(TIMER2_OVF_vect){
   // Timer runs at 250khz
@@ -1108,6 +1179,8 @@ ISR(TIMER2_OVF_vect){
 
 
 } //ISR
+
+
 
 
 

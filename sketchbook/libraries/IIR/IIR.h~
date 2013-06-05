@@ -1,0 +1,38 @@
+
+
+
+#include <Arduino.h>
+
+class IIR{
+
+public:
+
+	IIR();
+	IIR(float *fbcoeffs,float *fwcoeffs; uint8_t fborder, uint8_t fworder);
+
+	void setForwardCoeffs(float *nfwcoeffs);
+	void setForwardCoeffs(uint8_t idx, float ncoeff);	
+
+	void setFeebackCoeffs(float *nfbcoeffs);
+	void setFeedbackCoeffs(uint8_t idx, float ncoeff);	
+
+	void setGain(float);
+
+	float getGain();
+	float step(float in);
+	uint8_t getForwardOrder();	
+	uint8_t getFeedbackOrder();	
+	
+private:
+
+uint8_t fborder;
+uint8_t fworder;
+float *fbcoeffs = null;
+float *fwcoeffs = null;
+int8_t ai = 0;
+int8_t bj = 0;
+float *x = null;
+float *y = null;
+float gain = 1.00f;
+
+};

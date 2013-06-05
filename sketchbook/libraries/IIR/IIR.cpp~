@@ -1,0 +1,116 @@
+
+
+
+class IIR{
+
+
+IIR::IIR(float *fbcoeffs,float *fwcoeffs; uint8_t nfborder, uint8_t nfworder)
+
+	setForwardCoeffs(fwcoeffs);
+	setFeedbackCoeffs(fbcoeffs);
+
+	fborder = nfborder+1;
+	fworder = nfworder+1;
+
+	x = (float*) calloc(fworder,sizeof(float));
+	y = (float*) calloc(fborder,sizeof(float));
+}
+
+
+// coeffs are in the form:[a0,a1,...,an]
+void IIR::setFeedbackCoeffs(float * ncoeffs){
+
+if(fbcoeffs != null){
+fbcoeffs = ncoeffs;
+
+}
+
+}
+
+// coeffs are in the form:[b0,b1,...,bn]
+void IIR::setForwardCoeffs(float * ncoeffs){
+
+if(fwcoeffs != null){
+fwcoeffs = ncoeffs;
+
+}
+
+}
+
+
+void IIR::setFeedbackCoeffs(uint8_t idx, float ncoeff){
+
+if( fbcoeffs != null){
+fbcoeffs[idx] = ncoeff;
+
+}
+
+
+
+void IIR::setForwardCoeffs(uint8_t idx, float ncoeff){
+
+if( fwcoeffs != null){
+fwcoeffs[idx] = ncoeff;
+
+}
+
+uint8_t IIR::getFeedbackOrder(){
+return fborder;
+
+}
+
+uint8_t IIR::getForwardOrder(){
+return fworder;
+
+}
+
+void IIR::setGain(float ngain){
+gain = ngain;
+
+}
+
+
+float IIR:getGain(){
+return gain;
+}
+
+
+
+float step(float x0 ){
+float y = 0;
+
+x[bj] = x0;
+
+// calculate feedforward
+for(int k = 0 ; k <fworder; k++){
+y += fwcoeffs[k] * x[((bj - k)<0)?(fworder + (bj - k)):(bj - k)];
+
+
+}
+bj = (bj+1) % fworder;
+
+for(int k = 1 ; k <fborder; k++){
+y += fbcoeffs[k] * y[((ai - k)<0)?(fborder + (ai - k)):(ai - k))];
+
+}
+y/=fbcoeffs[0]  // -- y/a0
+
+y*=gain; // variable gain
+
+y[ai] = y
+
+ai = (ai + 1)%fborder;
+
+
+
+
+
+return y;
+}
+
+
+
+}; //IIR 
+
+
+

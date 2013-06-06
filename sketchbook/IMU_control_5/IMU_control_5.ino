@@ -21,7 +21,7 @@
 
 // AD0 low = 0x68 (default for InvenSense evaluation board)
 // AD0 high = 0x69
-#define DBGOUTMODE 6
+#define DBGOUTMODE 7
 
 
 float dbg1f=0.0f,dbg2f=0.0f,dbg3f=0.0f;
@@ -199,7 +199,7 @@ IMUFilt;
 
 
 #define PID_MOT_RL_KP 1.0f
-#define PID_MOT_RL_KI 0.0f
+#define PID_MOT_RL_KI 0.1f
 #define PID_MOT_RL_KD 0.0f
 
 #define PID_MOT_RL_GAIN PID_GAIN
@@ -215,20 +215,20 @@ float pid_mot_rl[3] = {
 PID pid_rl(pid_mot_rl,PID_MOT_RL_GAIN,3,PID_MOT_RL_H);
 
 
-#define PID_MOT_ALT_KP 0.9f
-#define PID_MOT_ALT_KI 0.0f
-#define PID_MOT_ALT_KD 0.0f
+#define PID_MOT_ALT_KP 0.4f
+#define PID_MOT_ALT_KI 0.015f
+#define PID_MOT_ALT_KD 0.2f
 
-#define PID_MOT_ALT_AGGRO_KP 5.0f
-#define PID_MOT_ALT_AGGRO_KI 0.0f
-#define PID_MOT_ALT_AGGRO_KD 0.0f
+#define PID_MOT_ALT_AGGRO_KP 1.0f
+#define PID_MOT_ALT_AGGRO_KI 0.015f
+#define PID_MOT_ALT_AGGRO_KD 0.2f
 
-#define PID_MOT_ALT_CONSERVATIVE_KP 0.3f
-#define PID_MOT_ALT_CONSERVATIVE_KI 0.0f
-#define PID_MOT_ALT_CONSERVATIVE_KD 0.0f
+#define PID_MOT_ALT_CONSERVATIVE_KP 0.2f
+#define PID_MOT_ALT_CONSERVATIVE_KI 0.015f
+#define PID_MOT_ALT_CONSERVATIVE_KD 0.2f
 
-#define PID_MOT_AGGRO_LIM 40.0f
-#define PID_MOT_NORMAL_LIM 20.0f
+#define PID_MOT_AGGRO_LIM 25.0f
+#define PID_MOT_NORMAL_LIM 5.0f
 #define PID_MOT_CONSERVATIVE_LIM 0.0f
 
 
@@ -654,9 +654,11 @@ void loop() {
   /*----------------------------------------------------------------------------------------------------------------------------*/
 
   if(motcont){
-
+reg_set_rl_ang = 0.0f;
     dbg1f = pid_rl.step(reg_set_rl_ang,gyAngSimp.z);
-    setMotDirection(deg2rad(dbg1f),50);
+   
+//    setMotDirection(deg2rad(dbg1f),100);
+        setMotDirection(0.0f,120);
 
     //setMotSpeed(0,MOT_R_IN1_PIN,MOT_R_IN2_PIN,MOT_R_PWM_PIN);
     //setMotSpeed(0,MOT_L_IN1_PIN,MOT_L_IN2_PIN,MOT_L_PWM_PIN);
@@ -670,15 +672,17 @@ void loop() {
     if(e > PID_MOT_AGGRO_LIM){
 
       pid_alt.setCoeffs(pid_mot_alt_aggro);
-
+    //  pid_alt.setIerr(0.0f);
     }
     else if(e> PID_MOT_NORMAL_LIM){
 
       pid_alt.setCoeffs(pid_mot_alt);
+  //          pid_alt.setIerr(0.0f);
     }
     else {
 
       pid_alt.setCoeffs(pid_mot_alt_conservative);
+//            pid_alt.setIerr(0.0f);
     }
 
     dbg2f = pid_alt.step(reg_set_h,ults_h);

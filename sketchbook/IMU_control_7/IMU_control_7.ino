@@ -46,6 +46,9 @@ SRF02 ultrasonic(0x70,SRF02_CENTIMETERS);
 //prototypes
 //void setStruct( IMUFilt *imu, float xval,float yval,float zval);
 
+String inString;
+String cmd;
+
 
 volatile byte imuready = 0;
 volatile byte magnready = 0;
@@ -59,7 +62,7 @@ volatile uint8_t ovfcnt3 = 0;
 
 #define SERIAL_BUFSIZE 48
 
-volatile uint8_t serialbuf[SERIAL_BUFSIZE];
+byte serialbuf[SERIAL_BUFSIZE];
 
 volatile byte serialstrbegin = 0;
 
@@ -204,9 +207,9 @@ IMUFilt;
 #define PID_H (1.0f/ACCEL_GYRO_SAMPLERATE_HZ)
 
 
-#define PID_MOT_RL_KP 1.0f
-#define PID_MOT_RL_KI 0.1f
-#define PID_MOT_RL_KD 0.0f
+#define PID_MOT_RL_KP 1.3f
+#define PID_MOT_RL_KI 0.13f//0.1f
+#define PID_MOT_RL_KD 0.17f
 
 #define PID_MOT_RL_GAIN PID_GAIN
 #define PID_MOT_RL_H PID_H
@@ -230,16 +233,16 @@ PID pid_rl(pid_mot_rl,PID_MOT_RL_GAIN,3,PID_MOT_RL_H);
 
 
 #define PID_MOT_ALT_KP 0.4f
-#define PID_MOT_ALT_KI 0.015f
-#define PID_MOT_ALT_KD 0.2f
+#define PID_MOT_ALT_KI 0.0f//0.015f
+#define PID_MOT_ALT_KD 0.0f//0.2f
 
 #define PID_MOT_ALT_AGGRO_KP 1.0f
-#define PID_MOT_ALT_AGGRO_KI 0.015f
-#define PID_MOT_ALT_AGGRO_KD 0.2f
+#define PID_MOT_ALT_AGGRO_KI 0.0f//0.015f
+#define PID_MOT_ALT_AGGRO_KD 0.0f//0.2f
 
 #define PID_MOT_ALT_CONSERVATIVE_KP 0.2f
-#define PID_MOT_ALT_CONSERVATIVE_KI 0.015f
-#define PID_MOT_ALT_CONSERVATIVE_KD 0.2f
+#define PID_MOT_ALT_CONSERVATIVE_KI 0.0f //0.015f
+#define PID_MOT_ALT_CONSERVATIVE_KD 0.0f//0.2f
 
 #define PID_MOT_AGGRO_LIM 25.0f
 #define PID_MOT_NORMAL_LIM 5.0f
@@ -269,7 +272,7 @@ PID pid_alt(pid_mot_alt,PID_MOT_ALT_GAIN,3,PID_MOT_ALT_H);
 
 float reg_set_rl_ang = 0.0f;
 int reg_set_speed = 0;
-float reg_set_h = 150.0f;
+float reg_set_h = 130.0f;
 
 
 //motor controls
@@ -658,12 +661,27 @@ void loop() {
 
 
   if(serialready){
+Serial.print(inString);
+    cmd = inString;
+inString = "";
 
-    volatile  byte * buf = serialbuf;
-    int k = serialstrbegin;
+cmd.trim();
 
-Serial.println((char*)buf);
-    
+     byte * buf = serialbuf;
+    int k = 0;
+
+//Serial.println((char*)buf);
+  Serial.println();
+   
+   
+    for(byte i = 0; i < cmd.length();i++){
+  serialbuf[i] = (byte) cmd.charAt(i);
+  
+  }
+   Serial.println("BUFFER:");
+   Serial.print((char*)buf);
+ 
+ 
     float test_f;
     float *pidf = (float*) calloc(3,sizeof(float));
     int16_t test_i16;
@@ -675,12 +693,13 @@ Serial.println((char*)buf);
  if((buf[k+1] == 'e' && buf[k+2] == 'n') || (buf[k+1] == 'E' && buf[k+2] == 'N')){
 
       main_enable = 1;
+      setImuStruct(&gyAngSimp,0.0f,0.0f,0.0f);
 
     } 
     else if((buf[k+1] == 'd' && buf[k+2] == 'i' && buf[k+3] == 's' ) || (buf[k+1] == 'D' && buf[k+2] == 'I' && buf[k+3] == 'S')){
 
       main_enable = 0;
-
+      setImuStruct(&gyAngSimp,0.0f,0.0f,0.0f);
     } else
     if(buf[k+1] == 'p' || buf[k+1] == 'P' ){
 
@@ -793,12 +812,13 @@ Serial.println((char*)buf);
 
               break;
             }
-          }
+          default:break;  
+        }
           break;
-          break;
+         
         }
 
-
+default:break;
       }//sw
     }
     else if(buf[k+1] == 'w' && buf[k+2] == 'i'){
@@ -850,7 +870,7 @@ Serial.println((char*)buf);
       // }
 
     }
-    else if(buf[k+1] == 'r' || buf[k+2] == 'R'){
+    else if(buf[k+1] == 'r' || buf[k+1] == 'R'){
       switch(buf[k+2]){
       case 'g':
       case 'G':
@@ -1450,28 +1470,23 @@ int freeRam () {
 
 
 void serialEvent(){
-    if(bitRead(PORTB,5)){
-      bitWrite(PORTB,5,0);
 
+  while(Serial.available() > 0){
+
+    char inChar = (char) Serial.read();
+
+    inString += inChar;
+
+    if(inChar ==  '\n'){
+      serialready = 1;
     }
-    else{
-      bitWrite(PORTB,5,1);
 
-    }
-  serialstrbegin = readSerial(serialbuf);
-Serial.print((char*)serialbuf);
 
-if(bitRead(PORTB,5)){
-      bitWrite(PORTB,5,0);
+  }
 
-    }
-    else{
-      bitWrite(PORTB,5,1);
-
-    }
-} //serialevent
+}// SerialEvent
 volatile int si = 0;
-
+/*
 int readSerial(volatile byte* volatile buf){
 
   for(byte i; i < SERIAL_BUFSIZE;i++){
@@ -1512,6 +1527,8 @@ int readSerial(volatile byte* volatile buf){
   //result[1] = strready
   return k;
 }
+*/
+
 
 ISR(TIMER2_OVF_vect){
   // Timer runs at 250khz

@@ -675,7 +675,7 @@ cmd.trim();
    
    
     for(byte i = 0; i < cmd.length();i++){
-  serialbuf[i] = (byte) cmd.charAt(i);
+  buf[i] = (byte) cmd.charAt(i);
   
   }
   
@@ -698,6 +698,8 @@ for(struct {byte i ;byte  k;} fl = {5,0} ; fl.i < (((cmd.length() -5 -1)/2)+5) ;
 
       main_enable = 1;
       setImuStruct(&gyAngSimp,0.0f,0.0f,0.0f);
+    //  pid_rl.reset();
+   //   pid_alt.reset();
 
     } 
     else if((buf[k+1] == 'd' && buf[k+2] == 'i' && buf[k+3] == 's' ) || (buf[k+1] == 'D' && buf[k+2] == 'I' && buf[k+3] == 'S')){
@@ -759,6 +761,7 @@ for(struct {byte i ;byte  k;} fl = {5,0} ; fl.i < (((cmd.length() -5 -1)/2)+5) ;
               for(byte i = 0 ; i<3;i++){
                 pid_mot_alt[i] = pidf[i];
               }
+              pid_alt.reset();
               break;
             }
 
@@ -769,6 +772,7 @@ for(struct {byte i ;byte  k;} fl = {5,0} ; fl.i < (((cmd.length() -5 -1)/2)+5) ;
               for(byte i = 0 ; i<3;i++){
                 pid_mot_alt_conservative[i] = pidf[i];
               }
+              pid_alt.reset();
               break;
             }
 
@@ -779,6 +783,7 @@ for(struct {byte i ;byte  k;} fl = {5,0} ; fl.i < (((cmd.length() -5 -1)/2)+5) ;
               for(byte i = 0 ; i<3;i++){
                 pid_mot_alt_aggro[i] = pidf[i];
               }
+              pid_alt.reset();
               break;
             }
           default:
@@ -797,7 +802,7 @@ for(struct {byte i ;byte  k;} fl = {5,0} ; fl.i < (((cmd.length() -5 -1)/2)+5) ;
               for(byte i = 0 ; i<3;i++){
                 pid_mot_rl[i] = pidf[i];
               }
-
+              pid_rl.reset();
               break;
             }
 
@@ -917,7 +922,14 @@ default:break;
 
           break;
         }
-
+      case 'S':
+      case 's':{
+      pid_alt.reset();
+      pid_rl.reset();
+      setImuStruct(&gyAngSimp,0.0f,0.0f,0.0f);
+      
+      break;
+      }
 
 
       default:

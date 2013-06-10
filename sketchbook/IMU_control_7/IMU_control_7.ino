@@ -207,9 +207,9 @@ IMUFilt;
 #define PID_H (1.0f/ACCEL_GYRO_SAMPLERATE_HZ)
 
 
-#define PID_MOT_RL_KP 1.3f
+#define PID_MOT_RL_KP 1.25f
 #define PID_MOT_RL_KI 0.13f//0.1f
-#define PID_MOT_RL_KD 0.17f
+#define PID_MOT_RL_KD 0.12f
 
 #define PID_MOT_RL_GAIN PID_GAIN
 #define PID_MOT_RL_H PID_H
@@ -232,20 +232,20 @@ float pid_mot_rl_conservative[3] = {
 PID pid_rl(pid_mot_rl,PID_MOT_RL_GAIN,3,PID_MOT_RL_H);
 
 
-#define PID_MOT_ALT_KP 0.4f
+#define PID_MOT_ALT_KP 0.7f
 #define PID_MOT_ALT_KI 0.0f//0.015f
 #define PID_MOT_ALT_KD 0.0f//0.2f
 
-#define PID_MOT_ALT_AGGRO_KP 1.0f
+#define PID_MOT_ALT_AGGRO_KP 1.2f
 #define PID_MOT_ALT_AGGRO_KI 0.0f//0.015f
 #define PID_MOT_ALT_AGGRO_KD 0.0f//0.2f
 
-#define PID_MOT_ALT_CONSERVATIVE_KP 0.2f
+#define PID_MOT_ALT_CONSERVATIVE_KP 0.5f
 #define PID_MOT_ALT_CONSERVATIVE_KI 0.0f //0.015f
 #define PID_MOT_ALT_CONSERVATIVE_KD 0.0f//0.2f
 
-#define PID_MOT_AGGRO_LIM 25.0f
-#define PID_MOT_NORMAL_LIM 5.0f
+#define PID_MOT_AGGRO_LIM 15.0f
+#define PID_MOT_NORMAL_LIM 3.0f
 #define PID_MOT_CONSERVATIVE_LIM 0.0f
 
 

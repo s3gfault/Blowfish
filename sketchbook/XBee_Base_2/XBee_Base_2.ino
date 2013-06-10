@@ -25,19 +25,29 @@ SoftwareSerial xbee(12,13);
 void serialFloatSend(float f){
   byte * b = (byte *) &f;
 
+if (b[0]<0x10) {Serial.print("0");} 
   Serial.print(b[0],HEX);
   // Serial.print(" "); 
+  if (b[1]<0x10) {Serial.print("0");} 
   Serial.print(b[1],HEX);
   // Serial.print(" "); 
+  if (b[2]<0x10) {Serial.print("0");} 
   Serial.print(b[2],HEX);
   // Serial.print(" "); 
+  if (b[3]<0x10) {Serial.print("0");} 
   Serial.print(b[3],HEX);
 
+
+ if (b[0]<0x10) {xbee.print("0");} 
   xbee.print(b[0],HEX);
+
+ if (b[1]<0x10) {xbee.print("0");} 
   // Serial.print(" "); 
   xbee.print(b[1],HEX);
+   if (b[2]<0x10) {xbee.print("0");} 
   // Serial.print(" "); 
   xbee.print(b[2],HEX);
+   if (b[3]<0x10) {xbee.print("0");} 
   // Serial.print(" "); 
   xbee.print(b[3],HEX);
   /*
@@ -65,14 +75,18 @@ void serialInt16_tSend(int16_t i){
   byte * b = (byte *) &i;
 
 
-  Serial.print(b[0],HEX);
-  // Serial.write(" "); 
+if (b[1]<0x10) {Serial.print("0");} 
+   
   Serial.print(b[1],HEX);
-
-
-  xbee.print(b[0],HEX);
+if (b[0]<0x10) {Serial.print("0");} 
   // Serial.write(" "); 
+  Serial.print(b[0],HEX);
+
+if (b[1]<0x10) {xbee.print("0");} 
   xbee.print(b[1],HEX);
+if (b[0]<0x10) {xbee.print("0");} 
+  // Serial.write(" "); 
+  xbee.print(b[0],HEX);
 
 }
 /*
@@ -381,6 +395,36 @@ void loop() {
             }
             break;
           }
+          case 'r':
+          case 'R':{
+          
+            switch((char)cmd.charAt(3)){
+              case 'x':
+              case 'X':
+              case 'y':
+              case 'Y':
+              case 'z':
+              case 'Z':{
+                  
+                Serial.print("b");
+                Serial.print(cmd.charAt(1));
+                Serial.print(cmd.charAt(2));
+                Serial.print(cmd.charAt(3));
+                Serial.print(" ");
+
+                xbee.print("b");
+                xbee.print(cmd.charAt(1));
+                xbee.print(cmd.charAt(2));
+                xbee.print(cmd.charAt(3));
+                xbee.print(" ");
+              
+              break;}
+              default:break;
+              
+            }
+          break;
+          }
+          
         default:
           break;
         }

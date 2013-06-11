@@ -1,14 +1,15 @@
 
+
+
+
 #include <SoftwareSerial.h>
 
 #define KP 0
 #define KI 1
 #define KD 2
 
-float pidhoehe[3] = {
-  0}; //6 Nachkommastellen
-float pidrichtung[3] = {
-  0};//6 Nachkommastellen
+float pidhoehe[3] = {0}; //6 Nachkommastellen
+float pidrichtung[3] = {0};//6 Nachkommastellen
 float winkel = 0.0; //2 Nachkommastellen [-90,90] 
 int16_t schub = 0; // [-255, 255]
 int16_t wunschhoehe = 0;// [30-300]
@@ -16,13 +17,20 @@ int16_t wunschhoehe = 0;// [30-300]
 
 #define STRLEN 32
 #define CHRBUFSIZE 16
+
 String inString;
 String cmd;
+
+float fbuf[3]= {0.0f,0.0f,0.0f};
+int16_t ibuf[3] = {0,0,0};
+
+volatile byte strready = 0;
 
 SoftwareSerial xbee(12,13);
 
 
 void serialFloatSend(float f){
+  
   byte * b = (byte *) &f;
 
   Serial.write(b[0]);
@@ -40,6 +48,7 @@ void serialFloatSend(float f){
   xbee.write(b[2]);
   // Serial.print(" "); 
   xbee.write(b[3]);
+  
   /*
   float  g = *((float*) b);
    
@@ -62,20 +71,20 @@ void serialFloatSend(float f){
 }
 
 void serialInt16_tSend(int16_t i){
+  
   byte * b = (byte *) &i;
-
 
   Serial.write(b[0]);
   // Serial.write(" "); 
   Serial.write(b[1]);
-
 
   xbee.write(b[0]);
   // Serial.write(" "); 
   xbee.write(b[1]);
 
 }
-/*
+
+/* ersetzt durch switch und Stringfunktionen
 void sendDataHardware( char * cmd){
  
  if(cmd[0] == 'p' && cmd[1] == 'h'){
@@ -123,55 +132,42 @@ void sendDataHardware( char * cmd){
  Serial.println();
  }
  }
- 
- 
  */
+//
 void setup() {
 
   Serial.begin(9600);
   xbee.begin(9600);
   //Serial1.begin(115200);
+  
 }
 
 
-float fbuf[3]= {
-  0.0f,0.0f,0.0f};
-int16_t ibuf[3] = {
-  0,0,0};
-
-volatile byte strready = 0;
-
 void loop() { 
 
-
-  //Zuweisung
+  //Zuweisung: sonst über das SerialMonitor
   /*  pidhoehe[KP] = 2.0; 
    pidhoehe[KI] = -78.0; 
    pidhoehe[KD] = 4.0;
-   
    pidrichtung[KP] = 0.0; 
    pidrichtung[KI] = 0.0; 
    pidrichtung[KD] = 0.0;
-   
    winkel = 12.0;
-   
    schub = 0; //eigentlich int16_t
-   
    wunschhoehe = 100; //eigentlich int16_t
-   
    */
-  //
   // Senden via XBee:
 
   if(strready){
+    
     cmd = inString;
     strready = 0;
     inString = "";
 
-
+    //trim() entfernt Leerzeichen
     cmd.trim();
-
-
+    
+    //"b" wird als startbyte für alle Befehle verwendet
     if(cmd.startsWith("b")||cmd.startsWith("B")){
 
       char* xbuf = (char*) calloc( CHRBUFSIZE, sizeof(char));
@@ -180,7 +176,10 @@ void loop() {
       int xstart = 0;
       int ystart = 0;
       int zstart = 0;
+      
+      //Nach "b" wird der An/Aus-Befehl überprüft
       if(!(cmd.substring(1).compareTo("en")) || !(cmd.substring(1).compareTo("EN"))){
+        
         Serial.print("ben");
         // Serial.print(cmd.charAt(1));
         //  Serial.print(cmd.charAt(2));
@@ -195,11 +194,11 @@ void loop() {
         xbee.print(" ");
         xbee.print(" ");
         xbee.println();
-        Serial.println();
-
-
+        Serial.println();  
       }
+      
       else if(!(cmd.substring(1).compareTo("dis")) || !(cmd.substring(1).compareTo("DIS"))){
+        
         Serial.print("bdis");
         // Serial.print(cmd.charAt(1));
         //  Serial.print(cmd.charAt(2));
@@ -215,21 +214,18 @@ void loop() {
         
         xbee.println();
         Serial.println();
-
       }
+      
       else if(!(cmd.substring(1).compareTo("tog")) || !(cmd.substring(1).compareTo("TOG"))){
-
-
+        
       }
       else if(cmd.substring(1).startsWith("meth") || cmd.substring(1).startsWith("METH")){
-
-
-
-
-
+        
       }
-      else
-      {
+      
+      //falls ein anderer Befehl als An/Aus vewendet wurde prüft das Programm nun welche Parameterbefehle geschickt werden sollen
+      else{
+        
         xstart = cmd.indexOf(" ");
         ystart = cmd.indexOf(" ", xstart+1);
         zstart = cmd.indexOf(" ", ystart+1);
@@ -244,15 +240,9 @@ void loop() {
         case 'p':
           {
 
-
-
             fbuf[0] = atof(xbuf);
             fbuf[1] = atof(ybuf);
             fbuf[2] = atof(zbuf);
-
-
-
-
 
             switch((char)cmd.charAt(2)){
             case 'r':
@@ -260,9 +250,8 @@ void loop() {
             case 'H':
             case 'h':
               {
-
+                
                 switch((char)cmd.charAt(3)){
-
 
                 case '1':
                 case 'n':
@@ -385,12 +374,9 @@ void loop() {
           break;
         }
 
-
         free(xbuf);
         free(ybuf);
         free(zbuf);  
-
-
 
       }//switch char 1
     }// if startswith b
@@ -407,33 +393,26 @@ void loop() {
    //    sendDataHardware(cmd);
    
    }
-   
    // delay sollte nicht viel größer werden!
    delay(100);
-   
-   
    */
+   
   Serial.flush();
   //Ende Senden via XBee
 }
 
-
-
+//Wird automatisch aufgerufen falls man über den SerialMonitor Daten sendet!
 void serialEvent(){
 
   while(Serial.available() > 0){
 
     char inChar = (char) Serial.read();
-
     inString += inChar;
 
     if(inChar ==  '\n'){
       strready = 1;
     }
-
-
   }
-
 }// SerialEvent
 
 

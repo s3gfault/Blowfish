@@ -19,7 +19,7 @@ int16_t wunschhoehe = 0;// [30-300]
 String inString;
 String cmd;
 
-SoftwareSerial xbee(12,13);
+SoftwareSerial xbee(12,13);// rx tx
 
 
 void serialFloatSend(float f){
@@ -75,18 +75,18 @@ void serialInt16_tSend(int16_t i){
   byte * b = (byte *) &i;
 
 
-if (b[1]<0x10) {Serial.print("0");} 
-   
-  Serial.print(b[1],HEX);
 if (b[0]<0x10) {Serial.print("0");} 
-  // Serial.write(" "); 
+   
   Serial.print(b[0],HEX);
-
-if (b[1]<0x10) {xbee.print("0");} 
-  xbee.print(b[1],HEX);
-if (b[0]<0x10) {xbee.print("0");} 
+if (b[1]<0x10) {Serial.print("0");} 
   // Serial.write(" "); 
+  Serial.print(b[1],HEX);
+
+if (b[0]<0x10) {xbee.print("0");} 
   xbee.print(b[0],HEX);
+if (b[1]<0x10) {xbee.print("0");} 
+  // Serial.write(" "); 
+  xbee.print(b[1],HEX);
 
 }
 /*
@@ -458,6 +458,7 @@ void loop() {
    
    */
   Serial.flush();
+  xbee.flush();
   //Ende Senden via XBee
 }
 

@@ -60,9 +60,9 @@ volatile uint16_t ovfcnt = 0;
 volatile uint8_t ovfcnt2 = 0;
 volatile uint8_t ovfcnt3 = 0;
 
-#define SERIAL_BUFSIZE 48
+//#define SERIAL_BUFSIZE 64
 
-byte serialbuf[SERIAL_BUFSIZE];
+//uint8_t serialbuf[SERIAL_BUFSIZE];
 
 volatile byte serialstrbegin = 0;
 
@@ -661,31 +661,46 @@ void loop() {
 
 
   if(serialready){
-Serial.print(inString);
+    Serial.print(inString);
+    Serial.print(" len: ");
+    Serial.println(inString.length());
+
+
     cmd = inString;
-inString = "";
+    inString = "";
 
-cmd.trim();
+    //cmd.trim();
 
-     byte * buf = serialbuf;
+    uint8_t * buf = (uint8_t*) calloc(cmd.length()+1,sizeof(uint8_t));
     int k = 0;
 
-//Serial.println((char*)buf);
-  Serial.println();
-   
-   
-    for(byte i = 0; i < cmd.length();i++){
-  buf[i] = (byte) cmd.charAt(i);
-  
-  }
-  
-for(struct {byte i ;byte  k;} fl = {5,0} ; fl.i < (((cmd.length() -5 -1)/2)+5) ;fl.i++, fl.k++){
-  
-  buf[fl.i] = (char) ( ( ( ((buf[fl.i+fl.k] - 48)>9)?(buf[fl.i+fl.k]-48-7):(buf[fl.i+fl.k]-48))<<4) + (((buf[fl.i+fl.k+1] - 48)>9)?(buf[fl.i+fl.k+1]-48-7):(buf[fl.i+fl.k+1]-48)) );
+    //Serial.println((char*)buf);
+    Serial.println();
 
-  }
- 
- 
+
+    for(byte i = 0; i < cmd.length();i++){
+      buf[i] = (char) cmd.charAt(i);
+
+    }
+
+    for(int i = 0; i<cmd.length();i++){
+      Serial.print((char)buf[i]);
+
+    }
+    if(cmd.length() >6){
+      for(struct {byte i ;byte  k;} fl = {5,0} ; fl.i < (((cmd.length() -5-1 )/2)+5) ;fl.i++, fl.k++){
+
+        buf[fl.i] = (char) ( ( ( ((buf[fl.i+fl.k] - 48)>9)?(buf[fl.i+fl.k]-48-7):(buf[fl.i+fl.k]-48))<<4) + (((buf[fl.i+fl.k+1] - 48)>9)?(buf[fl.i+fl.k+1]-48-7):(buf[fl.i+fl.k+1]-48)) );
+
+      }
+    }
+
+
+    for(int i = 0; i<cmd.length();i++){
+      Serial.print(buf[i]);
+
+    }
+
     float test_f;
     float *pidf = (float*) calloc(3,sizeof(float));
     int16_t test_i16;
@@ -694,20 +709,20 @@ for(struct {byte i ;byte  k;} fl = {5,0} ; fl.i < (((cmd.length() -5 -1)/2)+5) ;
     //  Serial.write(buf[k+1]);
     //  Serial.write(buf[k+2]);
     //  Serial.write(buf[k+3]);
- if((buf[k+1] == 'e' && buf[k+2] == 'n') || (buf[k+1] == 'E' && buf[k+2] == 'N')){
+    if((buf[k+1] == 'e' && buf[k+2] == 'n') || (buf[k+1] == 'E' && buf[k+2] == 'N')){
 
       main_enable = 1;
       setImuStruct(&gyAngSimp,0.0f,0.0f,0.0f);
-    //  pid_rl.reset();
-   //   pid_alt.reset();
+      //  pid_rl.reset();
+      //   pid_alt.reset();
 
     } 
     else if((buf[k+1] == 'd' && buf[k+2] == 'i' && buf[k+3] == 's' ) || (buf[k+1] == 'D' && buf[k+2] == 'I' && buf[k+3] == 'S')){
 
       main_enable = 0;
       setImuStruct(&gyAngSimp,0.0f,0.0f,0.0f);
-    } else
-    if(buf[k+1] == 'p' || buf[k+1] == 'P' ){
+    } 
+    else if(buf[k+1] == 'p' || buf[k+1] == 'P' ){
 
 
       pidf =  ((float*) (buf+5));
@@ -821,13 +836,15 @@ for(struct {byte i ;byte  k;} fl = {5,0} ; fl.i < (((cmd.length() -5 -1)/2)+5) ;
 
               break;
             }
-          default:break;  
-        }
+          default:
+            break;  
+          }
           break;
-         
+
         }
 
-default:break;
+      default:
+        break;
       }//sw
     }
     else if(buf[k+1] == 'w' && buf[k+2] == 'i'){
@@ -923,20 +940,21 @@ default:break;
           break;
         }
       case 'S':
-      case 's':{
-      pid_alt.reset();
-      pid_rl.reset();
-      setImuStruct(&gyAngSimp,0.0f,0.0f,0.0f);
-      
-      break;
-      }
+      case 's':
+        {
+          pid_alt.reset();
+          pid_rl.reset();
+          setImuStruct(&gyAngSimp,0.0f,0.0f,0.0f);
+
+          break;
+        }
 
 
       default:
         break;
       }
     } 
-    
+
 
 #if DBGOUTMODE == 8
     Serial.print("ph1:\t");
@@ -1000,7 +1018,8 @@ default:break;
 
 
     free(pidf);
-serialready = 0;
+    free(buf);
+    serialready = 0;
     //parchng = 1;
   }//serialready
 
@@ -1010,7 +1029,7 @@ serialready = 0;
       //reg_set_rl_ang = 0.0f;
 
       motcont = 0;
-    
+
       dbg1f = pid_rl.step(reg_set_rl_ang,gyAngSimp.z);
 
       setMotDirection(deg2rad(dbg1f),reg_set_speed);
@@ -1047,13 +1066,14 @@ serialready = 0;
       // setImuStruct(&gyAngSimp,gyAngSimp.x,gyAngSimp.y,0.0f); // reset gyro
 
       //    setMotAlt(100);
-      
+
     }//motcont
-  }else{
-  
-  setMotAlt(0);
-  setMotDirection(0.0f,0);
-  
+  }
+  else{
+
+    setMotAlt(0);
+    setMotDirection(0.0f,0);
+
   }// main enable
 
   /*----------------------------------------------------------------------------------------------------------------------------*/
@@ -1504,46 +1524,46 @@ void serialEvent(){
 volatile int si = 0;
 /*
 int readSerial(volatile byte* volatile buf){
-
-  for(byte i; i < SERIAL_BUFSIZE;i++){
-  buf[i] = 0;
-  
-  }
-  
-  
-  
-  while(Serial.available() > 0){
-
-
-    //char inChar = (char) Serial.read();
-    buf[si] = (char)Serial.read();
-    Serial.print((char)buf[si]);
-
-    //inString += inChar;
-
-    if(buf[si] ==  '\n'){
-      serialready = 1;
-      break;
-    }
-    si = (si +1) % SERIAL_BUFSIZE;
-  }
-
-  int k;
-
-  for(k = 0; k<=SERIAL_BUFSIZE;k++){
-
-    if(buf[k] == 'b'){
-
-      break;
-
-    }
-  }
-
-  
-  //result[1] = strready
-  return k;
-}
-*/
+ 
+ for(byte i; i < SERIAL_BUFSIZE;i++){
+ buf[i] = 0;
+ 
+ }
+ 
+ 
+ 
+ while(Serial.available() > 0){
+ 
+ 
+ //char inChar = (char) Serial.read();
+ buf[si] = (char)Serial.read();
+ Serial.print((char)buf[si]);
+ 
+ //inString += inChar;
+ 
+ if(buf[si] ==  '\n'){
+ serialready = 1;
+ break;
+ }
+ si = (si +1) % SERIAL_BUFSIZE;
+ }
+ 
+ int k;
+ 
+ for(k = 0; k<=SERIAL_BUFSIZE;k++){
+ 
+ if(buf[k] == 'b'){
+ 
+ break;
+ 
+ }
+ }
+ 
+ 
+ //result[1] = strready
+ return k;
+ }
+ */
 
 
 ISR(TIMER2_OVF_vect){
@@ -1580,7 +1600,7 @@ ISR(TIMER2_OVF_vect){
     }
 
 
-    
+
   }
   else{
 
@@ -1590,6 +1610,8 @@ ISR(TIMER2_OVF_vect){
 
 
 } //ISR
+
+
 
 
 

@@ -21,7 +21,7 @@
 
 // AD0 low = 0x68 (default for InvenSense evaluation board)
 // AD0 high = 0x69
-#define DBGOUTMODE 9
+#define DBGOUTMODE 8
 
 
 float dbg1f=0.0f,dbg2f=0.0f,dbg3f=0.0f;
@@ -135,7 +135,6 @@ byte simpcnt = 0;
 //magnetometer
 #define MAGN_ENABLE 1
 
-#if MAGN_ENABLE
 
 #define MAGN_SAMPLERATE_HZ 50.0f
 
@@ -157,7 +156,6 @@ IIR lowpass_magn_z(lp_magn_a,lp_magn_b,LP_MAGN_ORDER,LP_MAGN_ORDER);
 float heading = 0.0f;
 float headingdegrees = 0.0f;
 
-#endif
 //ultrasonic
 
 
@@ -307,19 +305,16 @@ IMURaw gr,ar;
 IMUFilt gf,af,gyAng,gyAngSimp;
 
 
-#if MAGN_ENABLE == 1
+
 MagnetometerScaled mr,mf; 
 
-#endif
 
 volatile byte dpin = 0;
 
 long acceltime = 0;
 
-//long t1 = 0,t2 = 0,t3 = 0,t4 = 0,t5=0;
+long t1 = 0,t2 = 0,t3 = 0,t4 = 0,t5=0;
 
-long t[7] ={
-  0,0,0,0,0,0,0};
 byte prready = 0;
 
 float avg_x = 0.0f;
@@ -336,11 +331,7 @@ void setup() {
   // join I2C bus (I2Cdev library doesn't do this automatically)
   //lowpass.setGain(LPGAIN);
   // lowpass2.setGain(LPGAIN);
-
-#if DBGOUTMODE == 9
-  t[0] = micros();
-
-#endif 
+  t4 = micros();
   TIMSK2 |= (1<<TOIE2);
 
   Wire.begin();
@@ -385,11 +376,7 @@ AFS_SEL Full Scale Range LSB Sensitivity
   Serial.println(accelgyro.testConnection() ? "MPU6050 connection successful" : "MPU6050 connection failed");
   Serial.println("Constructing new HMC5883L");
 #endif
-#if MAGN_ENABLE
   compass = HMC5883L(); // Construct a new HMC5883 compass.
-
-
-
 #if INITMSG
   Serial.println("Setting scale to +/- 1.3 Ga");
 #endif
@@ -406,7 +393,6 @@ AFS_SEL Full Scale Range LSB Sensitivity
   if(error != 0) // If there is an error, print it out.
     Serial.println(compass.GetErrorText(error));
   // configure Arduino LED for
-#endif
   pinMode(DBGPIN, OUTPUT);
 
   ultrasonic.setInterval(ULTS_INTERVAL);
@@ -420,28 +406,23 @@ AFS_SEL Full Scale Range LSB Sensitivity
 
   pid_alt.setOutputLimits(PID_MOT_ALT_LIM_MIN,PID_MOT_ALT_LIM_MAX);
   pid_rl.setOutputLimits(PID_MOT_RL_LIM_MIN,PID_MOT_RL_LIM_MAX);
-#if DBGOUTMODE == 9
-  t[0] =  micros() - t[3];
-#endif
+
+  t4 =  micros() - t4;
 }
 
 
 
 void loop() {
-#if DBGOUTMODE == 9
-  t[1] = micros();
-#endif
+  t3 = micros();
+
   if(imuready){
-       
-    #if DBGOUTMODE == 9
-  t[2] = micros();
-#endif
+    t1 = micros();   
     //digitalWrite(DBGPIN,dpin^1);
     //  digitalWrite(DBGPIN,1);
     accelgyro.getMotion6(&ar.x, &ar.y, &ar.z, &gr.x, &gr.y, &gr.z);
 
     //  digitalWrite(DBGPIN,0);
-    
+    t1= (micros() - t1);
     imuready = 0;
     imudataready = 1;
 
@@ -451,7 +432,7 @@ void loop() {
 
 
 
-   
+    t2 = micros();
     //  digitalWrite(DBGPIN,1);
     //filtering
     af.x = lowpass_accel_x.step(((float)ar.x/(float)(1<<14)));
@@ -515,19 +496,8 @@ void loop() {
       simpcnt++;
     }
 
-    if(abs(gyAngSimp.x) > 180.0f){
-      gyAngSimp.x += ( ((float)((  ((long)gyAngSimp.x) & 0x80000000L ) >> 31))? 360.0f:-360.0f);
-    }
 
-    if(abs(gyAngSimp.y) > 180.0f){
-      gyAngSimp.y += ( ((float)((  ((long)gyAngSimp.y) & 0x80000000L ) >> 31))? 360.0f:-360.0f);
-    }
-
-    if(abs(gyAngSimp.z) > 180.0f){
-      gyAngSimp.z += ( ((float)((  ((long)gyAngSimp.z) & 0x80000000L ) >> 31))? 360.0f:-360.0f);
-    }
-
-#else
+#endif
     if(abs(highpass_gyro_x.getY(0))  > GYRO_INT_THRES_X){
       gyAng.x += ((INT_GYRO_H_2)*(highpass_gyro_x.getY(1) + highpass_gyro_x.getY(0)));
     }
@@ -551,18 +521,26 @@ void loop() {
     if(abs(gyAng.z) > 180.0f){
       gyAng.z += ( ((float)((  ((long)gyAng.z) & 0x80000000L ) >> 31))? 360.0f:-360.0f);
     }
-#endif
 
 
+    if(abs(gyAngSimp.x) > 180.0f){
+      gyAngSimp.x += ( ((float)((  ((long)gyAngSimp.x) & 0x80000000L ) >> 31))? 360.0f:-360.0f);
+    }
 
+    if(abs(gyAngSimp.y) > 180.0f){
+      gyAngSimp.y += ( ((float)((  ((long)gyAngSimp.y) & 0x80000000L ) >> 31))? 360.0f:-360.0f);
+    }
+
+    if(abs(gyAngSimp.z) > 180.0f){
+      gyAngSimp.z += ( ((float)((  ((long)gyAngSimp.z) & 0x80000000L ) >> 31))? 360.0f:-360.0f);
+    }
+
+
+    t2 = micros() -t2 ;
     //digitalWrite(DBGPIN,0);
     imudataready = 0;
 
     prready = 1;
-#if DBGOUTMODE == 9
-  t[2] = micros() -t[2];
-#endif
-
   }//imudata 
   // these methods (and a few others) are also available
   //accelgyro.getAcceleration(&ax, &ay, &az);
@@ -571,10 +549,8 @@ void loop() {
 
   /*----------------------------------------------------------------------------------------------------------------------------*/
 
-#if MAGN_ENABLE 
+
   if(magnready){
-
-
     // Retrive the raw values from the compass (not scaled).
     //     MagnetometerRaw raw = compass.ReadRawAxis();
     // Retrived the scaled values from the compass (scaled to the configured scale).
@@ -589,11 +565,7 @@ void loop() {
   }//magnready
 
   if(magndataready){
-
-#if DBGOUTMODE == 9
-    t[3] = micros();
-#endif
-
+    t5 = micros();
     if(abs(mr.XAxis - lowpass_magn_x.getX(0)) < 1000.0f){
       mf.XAxis =  lowpass_magn_x.step(mr.XAxis);
     }
@@ -654,20 +626,16 @@ void loop() {
     magndataready = 0;
 
 
-#if DBGOUTMODE == 9
-    t[3] = micros() -t[3] ;
+#if DGBOUTMODE == 4
+    ahrs.MadgwickAHRSupdateIMU(gf.x,gf.y,gf.z,af.x,af.y,af.z);
 #endif
 
+    t5=  micros() - t5 ;
   }//magndata
-
-#endif
   /*----------------------------------------------------------------------------------------------------------------------------*/
 
-
   if(ultsready){
-#if DBGOUTMODE == 9
-  t[4] = micros();
-#endif
+
     ultsready=0;
     if(ultsread){
       ults_h_raw = (float) ultrasonic.read();
@@ -684,9 +652,7 @@ void loop() {
 
     }
 
-#if DBGOUTMODE == 9
-  t[4] = micros() - t[4];
-#endif
+
 
   }//ultsready
 
@@ -695,11 +661,6 @@ void loop() {
 
 
   if(serialready){
-
-#if DBGOUTMODE == 9
-
-    t[5] = micros();
-#endif
     Serial.print(inString);
     Serial.print(" len: ");
     Serial.println(inString.length());
@@ -995,9 +956,6 @@ void loop() {
     } 
 
 
-
-
-
 #if DBGOUTMODE == 8
     Serial.print("ph1:\t");
     Serial.print(pid_mot_alt[0],6);
@@ -1062,23 +1020,12 @@ void loop() {
     free(pidf);
     free(buf);
     serialready = 0;
-
-#if DBGOUTMODE == 9
-
-    t[5] = micros() -t[5];
-#endif
-
     //parchng = 1;
   }//serialready
 
   /*----------------------------------------------------------------------------------------------------------------------------*/
   if(main_enable){
     if(motcont){
-#if DBGOUTMODE == 9
-
-      t[6] = micros();
-
-#endif
       //reg_set_rl_ang = 0.0f;
 
       motcont = 0;
@@ -1120,11 +1067,6 @@ void loop() {
 
       //    setMotAlt(100);
 
-
-#if DBGOUTMODE == 9
-
-      t[6] = micros() -t[6];
-#endif
     }//motcont
   }
   else{
@@ -1139,9 +1081,6 @@ void loop() {
 
 
   if(prready){
-    #if DBGOUTMODE == 9
-  t[1] = micros() -t[1];
-#endif
     // digitalWrite(DBGPIN,1);
 #if DBGOUTMODE == 1
     Serial.print("a/g/m:\t ");
@@ -1419,48 +1358,6 @@ void loop() {
     Serial.print("\t");
     Serial.println();
     Serial.flush();
-    
-#elif DBGOUTMODE == 9
-      
-    Serial.print("Setup:\t");
-    Serial.print(t[0]);
-    Serial.print("\t");
-
-
-    Serial.print("Loop:\t");
-    Serial.print(t[1]);
-    Serial.print("\t");
-    
-    
-    Serial.print("IMU:\t");
-    Serial.print(t[2]);
-    Serial.print("\t");
-    
-#if MAGN_ENABLE
-
-    Serial.print("Magn:\t");
-    Serial.print(t[3]);
-    Serial.print("\t");
-#endif
-
-    Serial.print("Ults:\t");
-    Serial.print(t[4]);
-    Serial.print("\t");
-
-    Serial.print("Serial:\t");
-    Serial.print(t[5]);
-    Serial.print("\t");
-
-    Serial.print("PID:\t");
-    Serial.print(t[6]);
-    Serial.print("\t");
-    
-    Serial.print("Ram:\t");
-    Serial.print(freeRam());
-    Serial.print("\t");
-
-    Serial.println();
-    Serial.flush();
 #endif
 
     //digitalWrite(DBGPIN,0);
@@ -1713,7 +1610,6 @@ ISR(TIMER2_OVF_vect){
 
 
 } //ISR
-
 
 
 

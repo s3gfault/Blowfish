@@ -21,7 +21,7 @@
 
 // AD0 low = 0x68 (default for InvenSense evaluation board)
 // AD0 high = 0x69
-#define DBGOUTMODE 9
+#define DBGOUTMODE 8
 
 
 float dbg1f=0.0f,dbg2f=0.0f,dbg3f=0.0f;
@@ -210,7 +210,7 @@ IMUFilt;
 
 
 #define PID_MOT_RL_KP 1.3f
-#define PID_MOT_RL_KI 0.13f//0.1f
+#define PID_MOT_RL_KI 0.0f//0.13f
 #define PID_MOT_RL_KD 0.17f
 
 #define PID_MOT_RL_GAIN PID_GAIN
@@ -1026,7 +1026,7 @@ void loop() {
     Serial.print(pid_mot_rl[1],6);
     Serial.print(" ");
     Serial.print(pid_mot_rl[2],6);
-
+/*
     Serial.print("\tpr2:\t");
     Serial.print(pid_mot_rl_conservative[0],6);
     Serial.print(" ");
@@ -1040,7 +1040,7 @@ void loop() {
     Serial.print(pid_mot_rl_aggro[1],6);
     Serial.print(" ");
     Serial.print(pid_mot_rl_aggro[2],6);
-
+*/
     Serial.print("\twi:\t");
     Serial.print(reg_set_rl_ang,6);
 
@@ -1458,7 +1458,7 @@ void loop() {
     Serial.print("Ram:\t");
     Serial.print(freeRam());
     Serial.print("\t");
-
+    
     Serial.println();
     Serial.flush();
 #endif

@@ -180,7 +180,7 @@ void loop() {
   //
   // Senden via XBee:
 
-  if(strready && !xbee.available()){
+  if(strready){
   
 #if DEBUG == 1
   t[0] = micros();
@@ -479,11 +479,25 @@ t[0] = micros() - t[0];
 
   }//serready
   else  {
-  
-  if(xbee.available()){
-  
-  Serial.print( (char) xbee.read());
+  xbee.listen();
+  while(xbee.available() > 0){
+ 
+   
+   char inChar = (char) xbee.read();
+
+    xbeeString += inChar;
+
+    if(inChar ==  '\n'){
+      Serial.println(xbeeString);
+      xbeeString = "";
+    }
+
+
   }
+   
+    
+
+
   
   }
 

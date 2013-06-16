@@ -4,6 +4,8 @@
 
 #include <Arduino.h>
 
+#define  PID_XBUF_ENABLE 0
+
 class PID{
 
 
@@ -23,7 +25,9 @@ float getGain(void);
 void setH(float);
 float getH(void);
 
+#if PID_XBUF_ENABLE
 float getX(int8_t idx);
+#endif
 float getY(int8_t idx);
 float getE(int8_t idx);
 
@@ -31,7 +35,10 @@ void reset(void);
 
 void setOutputLimits(float,float);
 
+#if PID_XBUF_ENABLE
 float *x;
+#endif
+
 float *y;
 float *e;
 float step(float,float);
@@ -45,11 +52,18 @@ float h ; // time between samples
 float ierr; // integrated error
 
 // vars to adress the arrays x y e
+
 int8_t ai;
+
+#if PID_XBUF_ENABLE
 int8_t bi;
+#endif
+
 int8_t ci;
 
+#if PID_XBUF_ENABLE
 int8_t xlen;
+#endif
 int8_t ylen;
 int8_t elen;
 

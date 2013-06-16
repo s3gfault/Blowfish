@@ -8,7 +8,10 @@
 PID::PID(float *ncf, float ng, int8_t nl,float nh){
 cf = ncf;
 h = nh;
+#if PID_XBUF_ENABLE
 xlen = nl +1;
+#endif
+
 ylen = nl +1;
 elen = nl +1;
 gain = ng;
@@ -17,7 +20,10 @@ ierr = 0.0f;
 ymin = 0.0f;
 ymax = 0.0f;
 
+#if PID_XBUF_ENABLE
 x = (float*) calloc(xlen,sizeof(float));
+#endif
+
 y = (float*) calloc(ylen,sizeof(float));
 e = (float*) calloc(elen,sizeof(float));
 }//PID
@@ -64,12 +70,16 @@ ierr = nerr;
 float PID::step(float w,float x0){
 
 float yn = 0.0f;
+#if PID_XBUF_ENABLE
 x[bi] = x0;
-
+#endif
 
 // err
-e[ci] = w - x[bi];
+e[ci] = w - x0;
+
+#if PID_XBUF_ENABLE
 bi = (bi +1) % xlen;
+#endif
 
 // P
 yn += cf[0] * e[ci] ;
@@ -108,11 +118,11 @@ return yn;
 void PID::reset(void){
 
  ierr = 0.0f;
-
+#if PID_XBUF_ENABLE
 for(int i= 0; i < xlen;i++){
 x[i] = 0.0f;
 }
-
+#endif
 
 for(int i= 0; i < elen;i++){
 e[i] = 0.0f;
@@ -124,6 +134,7 @@ y[i] = 0.0f;
 
 }
 
+#if PID_XBUF_ENABLE
 float PID::getX(int8_t idx){
 	if(idx >= xlen){
 	idx = xlen-1;
@@ -131,6 +142,7 @@ float PID::getX(int8_t idx){
 
 return x[(int)(((bi - idx - 1)<0)?(xlen + (bi - idx -1)):(bi - idx -1))];
 }//getX
+#endif 
 
 float PID::getY(int8_t idx){
 if(idx >= ylen){

@@ -92,7 +92,7 @@ if(!((ymin == 0.0f) && (ymax == 0.0f))){
 
 		yn = ymin;
 
-	}else if(y >= ymax){
+	}else if(yn >= ymax){
 		yn = ymax;
 	}
 

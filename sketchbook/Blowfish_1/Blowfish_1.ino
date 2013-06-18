@@ -21,21 +21,23 @@
 
 // AD0 low = 0x68 (default for InvenSense evaluation board)
 // AD0 high = 0x69
-#define DBGOUTMODE 1
+#define DBGOUTMODE 8
 
 
 float dbg1f=0.0f,dbg2f=0.0f,dbg3f=0.0f;
 int dbg1 = 0,dbg2 = 0,dbg3 = 0;
 
 // config
+#define SERIALBAUD 19200
+
 #define TRAPEZ 1
 #define SIMPSON 2
 #define INTEGRATION TRAPEZ // set integration method
 
-// self explanatioanry
+// self explanationary
 #define MAGN_ENABLE 1  
 #define ULTS_ENABLE 1
-#define ACCEL_ENABLE 1
+#define ACCEL_ENABLE 0
 #define GYRO_ENABLE 1
 
 // a moving avg for debugging
@@ -114,8 +116,11 @@ byte ultsread = 0;
 #endif
 
 byte main_enable = 0;
+
 byte mot_rl_cont_auto = 1;
 byte mot_alt_cont_auto = 1;
+
+byte mot_rl_cont_gyro = 1;
 
 #define LPAORDER 1
 #define LPBORDER 1
@@ -174,7 +179,7 @@ IIR gyro_filt_z(hp_gyro_a,hp_gyro_b,HP_GYRO_ORDER,HP_GYRO_ORDER);
 #elif GYRO_FILT == LOWPASS
 
 #define LP_GYRO_ORDER 2
-#define LP_GYRO_CUTOFF_HZ 12.5f
+#define LP_GYRO_CUTOFF_HZ 6.0f
 #define LP_GYRO_RC (1.0f/LP_GYRO_CUTOFF_HZ)
 
 float lp_gyro_alpha = ((1.0f/ACCEL_GYRO_SAMPLERATE_HZ)/(LP_GYRO_RC+(1.0f/ACCEL_GYRO_SAMPLERATE_HZ)));
@@ -217,8 +222,14 @@ IIR lowpass_magn_x(lp_magn_a,lp_magn_b,LP_MAGN_ORDER,LP_MAGN_ORDER);
 IIR lowpass_magn_y(lp_magn_a,lp_magn_b,LP_MAGN_ORDER,LP_MAGN_ORDER);
 IIR lowpass_magn_z(lp_magn_a,lp_magn_b,LP_MAGN_ORDER,LP_MAGN_ORDER);
 
-float heading = 0.0f;
-float headingdegrees = 0.0f;
+float magn_head_rad = 0.0f;
+float magn_head_deg = 0.0f;
+float magn_head_rad_avg = 0.0f;
+float magn_head_deg_avg = 0.0f;
+
+int magn_head_rad_avg_cnt = 1;
+//int magn_head_deg_avg_cnt = 1;
+
 
 #endif
 //ultrasonic
@@ -342,8 +353,8 @@ float reg_set_h = 130.0f;
 #define MOT_L_PWM_PIN 10//10
 #define MOT_ALT_PWM_PIN 6//6
 
-#define MOT_R_IN1_PIN 7//7
-#define MOT_R_IN2_PIN 8//8
+#define MOT_R_IN1_PIN 8//7
+#define MOT_R_IN2_PIN 7//8
 
 #define MOT_L_IN1_PIN 11//11
 #define MOT_L_IN2_PIN 12//12
@@ -400,7 +411,7 @@ void setup() {
 
   Wire.begin();
 
-  Serial.begin(115200);
+  Serial.begin(SERIALBAUD);
   //Serial.begin(19200);
 
   // initialize device
@@ -663,35 +674,49 @@ void loop() {
 
     //     int MilliGauss_OnThe_XAxis = scaled.XAxis;// (or YAxis, or ZAxis)
 
-    // Calculate heading when the magnetometer is level, then correct for signs of axis.
-    heading = atan2(mf.YAxis, mf.XAxis);
+    // Calculate magn_head_rad when the magnetometer is level, then correct for signs of axis.
+    magn_head_rad = atan2(mf.YAxis, mf.XAxis);
 
-    // Once you have your heading, you must then add your 'Declination Angle', which is the 'Error' of the magnetic field in your locatio
+    // Once you have your magn_head_rad, you must then add your 'Declination Angle', which is the 'Error' of the magnetic field in yo
 
-    // Find yours here: http://www.magnetic-declination.com/
+      // Find yours here: http://www.magnetic-declination.com/
     // Mine is: 2� 37' W, which is 2.617 Degrees, or (which we need) 0.0456752665 radians, I will use 0.0457
     // If you cannot find your Declination, comment out these two lines, your compass will be slightly off.
 
 
     // Muenchen: 2°27' -> 0.04276056
     // declinationangle  
-    heading += 0.04276;
+    magn_head_rad += 0.04276;
 
     // Correct for when signs are reversed.
-    if(heading < -PI)
-      heading += 2*PI;
+    if(magn_head_rad < -PI)
+      magn_head_rad += 2*PI;
 
     // Check for wrap due to addition of declination.
-    if(heading > PI)
-      heading -= 2*PI;
+    if(magn_head_rad > PI)
+      magn_head_rad -= 2*PI;
 
     // Convert radians to degrees for readability.
-    headingdegrees = heading * 180/M_PI; 
+    magn_head_deg = rad2deg(magn_head_rad);// * 180/M_PI; 
+
+    //moving avg
+
+    magn_head_rad_avg += (magn_head_rad - magn_head_rad_avg)/((float)(magn_head_rad_avg_cnt + 1));
+
+    magn_head_rad_avg_cnt++;
+
+      if(magn_head_rad_avg_cnt == 0){
+      
+      magn_head_rad_avg = 0.0f;
+      
+      }
+      
+      magn_head_deg_avg = rad2deg(magn_head_rad_avg);
     magndataready = 0;
 
 
 #if DBGOUTMODE == 9
-      t[3] = micros() -t[3] ;
+    t[3] = micros() -t[3] ;
 #endif
 
   }//magndata
@@ -743,7 +768,7 @@ void loop() {
 
     cmd = inString;
     inString = "";
-Serial.print(cmd);
+    Serial.print(cmd);
     //cmd.trim();
 
 
@@ -988,7 +1013,7 @@ Serial.print(cmd);
 
 #elif SERIALCONV == ATOF
     int16_t *ibuf = (int16_t*) calloc(2,sizeof(int16_t));
-     
+
     cmd.trim();
     if(cmd.startsWith("b")||cmd.startsWith("B")){
 #define CHRBUFSIZE 24
@@ -1028,6 +1053,12 @@ Serial.print(cmd);
       }
       else if(!(cmd.substring(1).compareTo("crd")) || !(cmd.substring(1).compareTo("CRD"))){
         mot_rl_cont_auto = 0;
+      }
+      else if(!(cmd.substring(1).compareTo("cmg")) || !(cmd.substring(1).compareTo("CMG"))){
+        mot_rl_cont_gyro = 1;
+      }
+      else if(!(cmd.substring(1).compareTo("cmm")) || !(cmd.substring(1).compareTo("CMM"))){
+        mot_rl_cont_gyro = 0;
       }
       else
       {
@@ -1321,13 +1352,13 @@ Serial.print(cmd);
 
     Serial.print("Main:\t");
     Serial.println(main_enable);
-    
+
     Serial.print("RLC:\t");
     Serial.println(mot_rl_cont_auto);
-    
+
     Serial.print("AltC:\t");
     Serial.println(mot_alt_cont_auto);
-    
+
     Serial.println();
     Serial.flush();
 #endif
@@ -1342,7 +1373,7 @@ Serial.print(cmd);
     //parchng = 1;
   }//serialready
 
-/*----------------------------------------------------------------------------------------------------------------------------*/
+  /*----------------------------------------------------------------------------------------------------------------------------*/
 
   if(main_enable){
     if(motcont){
@@ -1355,19 +1386,27 @@ Serial.print(cmd);
       //reg_set_rl_ang = 0.0f;
 
       if(mot_rl_cont_auto){
+        if(mot_rl_cont_gyro){
 #if MOT_CONT_METH == OMEGA
 
-        dbg1f = pid_rl.step(reg_set_rl_ang,gf.z)
-          setMotDirection(deg2rad(dbg1f),reg_set_speed);
+          dbg1f = pid_rl.step(reg_set_rl_ang,gf.z)
+            setMotDirection(deg2rad(dbg1f),reg_set_speed);
 
 #elif MOT_CONT_METH == PHI        
 
 
 
 
-        dbg1f = pid_rl.step(reg_set_rl_ang,gyAng.z);
-        setMotDirection(deg2rad(dbg1f),reg_set_speed);
+          dbg1f = pid_rl.step(reg_set_rl_ang,gyAng.z);
+          setMotDirection(deg2rad(dbg1f),reg_set_speed);
+        }
+        else{
+        
+            //TODO magn control
 
+
+
+        }
 
 
 #endif
@@ -1438,63 +1477,63 @@ Serial.print(cmd);
     // digitalWrite(DBGPIN,1);
 #if DBGOUTMODE == 1
     Serial.print("a/g/m: ");
-/*
+    /*
     Serial.print( af.x ,5 ); 
-    Serial.print(" ");
-
-    Serial.print( af.y ,5 ); 
-    Serial.print(" ");
-
-    Serial.print( af.z ,5 ); 
-    Serial.print(" G: ");
-
-    Serial.print( gf.x ,5 ); 
-    Serial.print(" ");
-
-    Serial.print( gf.y ,5 ); 
-    Serial.print(" ");
-*/
+     Serial.print(" ");
+     
+     Serial.print( af.y ,5 ); 
+     Serial.print(" ");
+     
+     Serial.print( af.z ,5 ); 
+     Serial.print(" G: ");
+     
+     Serial.print( gf.x ,5 ); 
+     Serial.print(" ");
+     
+     Serial.print( gf.y ,5 ); 
+     Serial.print(" ");
+     */
     Serial.print( gf.z ,5 ); 
     Serial.print(" GI: ");
-/*
+    /*
     Serial.print(gyAng.x,5);
-    Serial.print(" ");
-
-    Serial.print(gyAng.y,5);
-    Serial.print(" ");
-*/
+     Serial.print(" ");
+     
+     Serial.print(gyAng.y,5);
+     Serial.print(" ");
+     */
     Serial.print(gyAng.z,5);
     Serial.print(" M: ");
-/*
+    /*
     Serial.print( mf.XAxis ,5 ); 
+     Serial.print(" ");
+     
+     Serial.print( mf.YAxis ,5 ); 
+     Serial.print(" ");
+     
+     Serial.print( mf.ZAxis ,5 ); 
+     Serial.print(" ");
+     */
+    Serial.print(magn_head_rad,5);
     Serial.print(" ");
 
-    Serial.print( mf.YAxis ,5 ); 
+    Serial.print(magn_head_deg,5);
     Serial.print(" ");
-
-    Serial.print( mf.ZAxis ,5 ); 
-    Serial.print(" ");
-*/ 
-    Serial.print(heading,5);
-    Serial.print(" ");
-
-    Serial.print(headingdegrees,5);
-    Serial.print(" ");
-/*
+    /*
     Serial.print("Read:\t");
-    Serial.print(t1);
-    Serial.print("\t");
-
-    Serial.print("Proc:\t");
-    Serial.print(t2);
-    Serial.print("\t");
-
-    t3 = micros() - t3;
-    Serial.print("Loop:\t");
-    Serial.print(t3);
-
-
-*/
+     Serial.print(t1);
+     Serial.print("\t");
+     
+     Serial.print("Proc:\t");
+     Serial.print(t2);
+     Serial.print("\t");
+     
+     t3 = micros() - t3;
+     Serial.print("Loop:\t");
+     Serial.print(t3);
+     
+     
+     */
     Serial.println();
 
     Serial.flush();
@@ -1753,7 +1792,7 @@ void setMotSpeed(int sp,uint8_t in1,uint8_t in2 ,uint8_t pwmpin){ // sp in [-255
   if( sp == 0){
 
     //TODO: fasten up code by setting the pins directly in the respective port registers
-    
+
     //freerun
 #if MOT_HALTMODE == MOT_FREERUN
     digitalWrite(in1,0);
@@ -1820,8 +1859,8 @@ void setMotAlt(int sp0){
 #define MOT_ALT_THRES 5
 #define MOT_ALT_OFFSET 40 
 
-  sp0 = constrain(sp0,-255,255);
-//    sp0 = constrain(sp0- MOT_ALT_OFFSET,-255,255);
+    sp0 = constrain(sp0,-255,255);
+  //    sp0 = constrain(sp0- MOT_ALT_OFFSET,-255,255);
 
   if(abs(sp0) <= MOT_ALT_THRES){
     sp0=0;
@@ -1978,6 +2017,8 @@ ISR(TIMER2_OVF_vect){
 
 
 } //ISR
+
+
 
 
 

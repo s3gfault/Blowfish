@@ -21,7 +21,7 @@
 
 // AD0 low = 0x68 (default for InvenSense evaluation board)
 // AD0 high = 0x69
-#define DBGOUTMODE 8
+#define DBGOUTMODE 1
 
 
 float dbg1f=0.0f,dbg2f=0.0f,dbg3f=0.0f;
@@ -30,10 +30,10 @@ int dbg1 = 0,dbg2 = 0,dbg3 = 0;
 // config
 #define TRAPEZ 1
 #define SIMPSON 2
-#define INTEGRATION SIMPSON // set integration method
+#define INTEGRATION TRAPEZ // set integration method
 
 // self explanatioanry
-#define MAGN_ENABLE 0  
+#define MAGN_ENABLE 1  
 #define ULTS_ENABLE 1
 #define ACCEL_ENABLE 1
 #define GYRO_ENABLE 1
@@ -48,7 +48,7 @@ int dbg1 = 0,dbg2 = 0,dbg3 = 0;
 
 #define HIGHPASS 1
 #define LOWPASS 2
-#define GYRO_FILT HIGHPASS // filter type for the Gyroscope
+#define GYRO_FILT LOWPASS   // filter type for the Gyroscope
 
 // select how the motors shoudl be stopped
 #define MOT_SHORT 0
@@ -400,8 +400,8 @@ void setup() {
 
   Wire.begin();
 
-  //Serial.begin(115200);
-  Serial.begin(9600);
+  Serial.begin(115200);
+  //Serial.begin(19200);
 
   // initialize device
 
@@ -1082,6 +1082,7 @@ Serial.print(cmd);
 
                   break;
                 }
+                break;
               }
             case 'H':
             case 'h':
@@ -1436,50 +1437,50 @@ Serial.print(cmd);
 #endif
     // digitalWrite(DBGPIN,1);
 #if DBGOUTMODE == 1
-    Serial.print("a/g/m:\t ");
-
+    Serial.print("a/g/m: ");
+/*
     Serial.print( af.x ,5 ); 
-    Serial.print("\t");
+    Serial.print(" ");
 
     Serial.print( af.y ,5 ); 
-    Serial.print("\t");
+    Serial.print(" ");
 
     Serial.print( af.z ,5 ); 
-    Serial.print("\tG:\t");
+    Serial.print(" G: ");
 
     Serial.print( gf.x ,5 ); 
-    Serial.print("\t");
+    Serial.print(" ");
 
     Serial.print( gf.y ,5 ); 
-    Serial.print("\t");
-
+    Serial.print(" ");
+*/
     Serial.print( gf.z ,5 ); 
-    Serial.print("\tGI:\t");
-
+    Serial.print(" GI: ");
+/*
     Serial.print(gyAng.x,5);
-    Serial.print("\t");
+    Serial.print(" ");
 
     Serial.print(gyAng.y,5);
-    Serial.print("\t");
-
+    Serial.print(" ");
+*/
     Serial.print(gyAng.z,5);
-    Serial.print("\tM:\t");
-
+    Serial.print(" M: ");
+/*
     Serial.print( mf.XAxis ,5 ); 
-    Serial.print("\t");
+    Serial.print(" ");
 
     Serial.print( mf.YAxis ,5 ); 
-    Serial.print("\t");
+    Serial.print(" ");
 
     Serial.print( mf.ZAxis ,5 ); 
-    Serial.print("\t");
-
+    Serial.print(" ");
+*/ 
     Serial.print(heading,5);
-    Serial.print("\t");
+    Serial.print(" ");
 
     Serial.print(headingdegrees,5);
-    Serial.print("\t");
-
+    Serial.print(" ");
+/*
     Serial.print("Read:\t");
     Serial.print(t1);
     Serial.print("\t");
@@ -1493,7 +1494,7 @@ Serial.print(cmd);
     Serial.print(t3);
 
 
-
+*/
     Serial.println();
 
     Serial.flush();

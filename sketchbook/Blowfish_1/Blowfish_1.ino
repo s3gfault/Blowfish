@@ -35,7 +35,7 @@ int dbg1 = 0,dbg2 = 0,dbg3 = 0;
 // self explanatioanry
 #define MAGN_ENABLE 0  
 #define ULTS_ENABLE 1
-#define ACCEL_ENABLE 0
+#define ACCEL_ENABLE 1
 #define GYRO_ENABLE 1
 
 // a moving avg for debugging
@@ -65,11 +65,11 @@ int dbg1 = 0,dbg2 = 0,dbg3 = 0;
 
 MPU6050 accelgyro(0x69);
 
-#if MAGN_ENABLE == 1
+#if MAGN_ENABLE 
 HMC5883L compass;
 #endif
 
-#if ULTS_ENABLE == 1
+#if ULTS_ENABLE 
 
 SRF02 ultrasonic(0x70,SRF02_CENTIMETERS);
 
@@ -82,7 +82,7 @@ String cmd;
 
 // volatile var for the interrupt routine 
 
-#if ((GYRO_ENABLE == 1) || (ACCEL_ENABLE == 1))
+#if ((GYRO_ENABLE ) || (ACCEL_ENABLE))
 volatile byte imuready = 0;
 #endif 
 
@@ -691,7 +691,7 @@ void loop() {
 
 
 #if DBGOUTMODE == 9
-    t[3] = micros() -t[3] ;
+      t[3] = micros() -t[3] ;
 #endif
 
   }//magndata
@@ -743,7 +743,7 @@ void loop() {
 
     cmd = inString;
     inString = "";
-
+Serial.print(cmd);
     //cmd.trim();
 
 
@@ -989,7 +989,7 @@ void loop() {
 #elif SERIALCONV == ATOF
     int16_t *ibuf = (int16_t*) calloc(2,sizeof(int16_t));
      
-
+    cmd.trim();
     if(cmd.startsWith("b")||cmd.startsWith("B")){
 #define CHRBUFSIZE 24
       char* xbuf = (char*) calloc( CHRBUFSIZE, sizeof(char));
@@ -1007,7 +1007,7 @@ void loop() {
       }
       else if(!(cmd.substring(1).compareTo("dis")) || !(cmd.substring(1).compareTo("DIS"))){
 
-        main_enable = 1;
+        main_enable = 0;
         setImuStruct(&gyAng,0.0f,0.0f,0.0f);
 
 
@@ -1145,7 +1145,7 @@ void loop() {
             case 'I':
               {
                 reg_set_rl_ang = constrain(pidf[0],-90.0f,90.0f);          
-
+                setImuStruct(&gyAng,gyAng.x,gyAng.y,0.0f);
                 break;
 
               }
@@ -1318,6 +1318,15 @@ void loop() {
     Serial.print("RAM:\t");
     Serial.println(freeRam());
 
+    Serial.print("Main:\t");
+    Serial.println(main_enable);
+    
+    Serial.print("RLC:\t");
+    Serial.println(mot_rl_cont_auto);
+    
+    Serial.print("AltC:\t");
+    Serial.println(mot_alt_cont_auto);
+    
     Serial.println();
     Serial.flush();
 #endif
@@ -1409,7 +1418,7 @@ void loop() {
 
       motcont = 0;
     }//motcont
-  }
+  }//main enable
   else{
 
     setMotAlt(0);
@@ -1808,8 +1817,10 @@ void setMotDirection(float angl,int sp0){
 
 void setMotAlt(int sp0){
 #define MOT_ALT_THRES 5
+#define MOT_ALT_OFFSET 40 
 
   sp0 = constrain(sp0,-255,255);
+//    sp0 = constrain(sp0- MOT_ALT_OFFSET,-255,255);
 
   if(abs(sp0) <= MOT_ALT_THRES){
     sp0=0;

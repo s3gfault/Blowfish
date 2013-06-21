@@ -123,7 +123,7 @@ byte main_enable = 0;
 byte mot_rl_cont_auto = 1;
 byte mot_alt_cont_auto = 1;
 
-byte mot_rl_cont_gyro = 1;
+byte mot_rl_cont_gyro = 0;
 
 #define LPAORDER 1
 #define LPBORDER 1
@@ -1037,12 +1037,12 @@ void loop() {
         // ben
 
         main_enable = 1;
-        #if MAGN_ENABLE
+#if MAGN_ENABLE
         get_magn_offset = 1;
-         magn_head_rad_avg_cnt = 0;
-        #endif
-        
-        
+        magn_head_rad_avg_cnt = 0;
+#endif
+
+
         setImuStruct(&gyAng,0.0f,0.0f,0.0f);
 
       }
@@ -1276,16 +1276,16 @@ void loop() {
                 setImuStruct(&gyAng,0.0f,0.0f,0.0f);
                 break;
               }
-             #if MAGN_ENABLE 
-              case 'm':
-              case 'M':
+#if MAGN_ENABLE 
+            case 'm':
+            case 'M':
               {
                 get_magn_offset = 1;
                 magn_head_rad_avg_cnt = 0;  
-                
-              break;
-            }
-          #endif
+
+                break;
+              }
+#endif
             default:
               break;
             }
@@ -1368,21 +1368,27 @@ void loop() {
     Serial.print("wh:\t");
     Serial.println(reg_set_h,6);
 
-
     Serial.print("sc:\t");
     Serial.println(reg_set_speed);
+#if MAGN_ENABLE
+    Serial.print("mg_offs:\t");
+    Serial.println(magn_offset_deg);
+#endif
+    Serial.print("Main:\t");
+    Serial.println(main_enable);
+
+    Serial.print("dirC:\t");
+    Serial.println(mot_rl_cont_auto);
+
+    Serial.print("altC:\t");
+    Serial.println(mot_alt_cont_auto);
+
+    Serial.print("dirGy:\t");
+    Serial.println(mot_rl_cont_gyro);
 
     Serial.print("RAM:\t");
     Serial.println(freeRam());
 
-    Serial.print("Main:\t");
-    Serial.println(main_enable);
-
-    Serial.print("RLC:\t");
-    Serial.println(mot_rl_cont_auto);
-
-    Serial.print("AltC:\t");
-    Serial.println(mot_alt_cont_auto);
 
     Serial.println();
     Serial.flush();
@@ -1429,12 +1435,10 @@ void loop() {
         else{
 #if MAGN_ENABLE
           if(!get_magn_offset){
-                      
-          dbg1f = pid_rl.step(reg_set_rl_ang,magn_head_deg - magn_offset_deg);
+
+            dbg1f = pid_rl.step(reg_set_rl_ang,magn_offset_deg-magn_head_deg);
             setMotDirection(deg2rad(dbg1f),reg_set_speed);
-  
-            
-            
+
           }
 #endif          
         }
@@ -1474,6 +1478,8 @@ void loop() {
         setMotAlt((int)dbg2f);
       }
       else{
+
+        setMotAlt(constrain((int)reg_set_h,0,255));
 
 
       }
@@ -2048,6 +2054,7 @@ ISR(TIMER2_OVF_vect){
 
 
 } //ISR
+
 
 
 

@@ -1436,7 +1436,41 @@ void loop() {
 #if MAGN_ENABLE
           if(!get_magn_offset){
 
-            dbg1f = pid_rl.step(reg_set_rl_ang,magn_offset_deg-magn_head_deg);
+            float magn_pid_in = magn_head_deg-magn_offset_deg;
+
+            // calculate the derivative of the angle 
+            float magn_delta =  magn_head_deg -rad2deg(atan2(lowpass_magn_y.getY(1), lowpass_magn_x.getY(1))) ;
+
+            //look if the heading angle wrapped, if yes undo it
+            if( magn_delta  > 270.0f ){
+              magn_pid_in -= 360.0f;
+
+            }
+            else if (magn_delta  < -270.0f){
+
+              magn_pid_in += 360.0f;
+
+            }
+
+            // wrap the whole thing if it exceeds the limits            
+            if(magn_pid_in < -180.0f){
+              magn_pid_in += 360.0f;
+
+            }
+            else if (magn_pid_in > 180.0f){
+
+              magn_pid_in -= 360.0f;
+
+            }
+
+            // negate for the conroller
+            magn_pid_in *= (-1.0f);                  
+
+
+
+            //  magn_pid_in = constrain(magn_pid_in,-90.0f,90.0f);
+
+            dbg1f = pid_rl.step(reg_set_rl_ang,magn_pid_in);
             setMotDirection(deg2rad(dbg1f),reg_set_speed);
 
           }
@@ -2054,6 +2088,8 @@ ISR(TIMER2_OVF_vect){
 
 
 } //ISR
+
+
 
 
 

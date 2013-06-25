@@ -238,7 +238,7 @@ int magn_head_rad_avg_cnt = 1;
 #endif
 //ultrasonic
 
-#define ULTS_ENABLE 1
+
 
 #define ULTS_SAMPLERATE_HZ 12.5f
 #define ULTS_INTERVAL 80
@@ -465,8 +465,9 @@ AFS_SEL Full Scale Range LSB Sensitivity
   // configure Arduino LED for
 #endif
   pinMode(DBGPIN, OUTPUT);
-
+#if ULTS_ENABLE 
   ultrasonic.setInterval(ULTS_INTERVAL);
+#endif
 
   setImuStruct(&ar,(uint16_t)0,(uint16_t)0,(uint16_t)0);
   setImuStruct(&gr,(uint16_t)0,(uint16_t)0,(uint16_t)0);
@@ -734,7 +735,7 @@ void loop() {
 #endif
   /*----------------------------------------------------------------------------------------------------------------------------*/
 
-
+#if ULTS_ENABLE 
   if(ultsready){
 #if DBGOUTMODE == 9
     t[4] = micros();
@@ -760,7 +761,7 @@ void loop() {
 #endif
 
   }//ultsready
-
+#endif
 
   /*----------------------------------------------------------------------------------------------------------------------------*/
 
@@ -1058,6 +1059,11 @@ void loop() {
         setImuStruct(&gyAng,0.0f,0.0f,0.0f);
 
       }
+    /*  else if(!(cmd.substring(1).compareTo("rst")) || !(cmd.substring(1).compareTo("RST"))){
+
+    
+        
+      }*/
       else if(!(cmd.substring(1).compareTo("che")) || !(cmd.substring(1).compareTo("CHE"))){
         mot_alt_cont_auto = 1;
       }
@@ -2067,7 +2073,7 @@ ISR(TIMER2_OVF_vect){
     }
 
     if(ovfcnt3 == 1){
-#if ULTS_ENABLE == 1
+#if ULTS_ENABLE 
       ultsready = 1;
 #endif
       ovfcnt3 = 0;

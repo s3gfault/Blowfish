@@ -57,7 +57,7 @@
 #define DBG_ISR 1
 
 #if  DBG_ISR
-    volatile byte blinkstate =0;
+     byte blinkstate =0;
 #endif
 float dbg1f=0.0f,dbg2f=0.0f,dbg3f=0.0f;
 int dbg1 = 0,dbg2 = 0,dbg3 = 0;
@@ -75,7 +75,7 @@ int dbg1 = 0,dbg2 = 0,dbg3 = 0;
 #define ACCEL_ENABLE 0
 #define GYRO_ENABLE 1
 #define IPS_TX_ENABLE 1
-#define DROP_ENABLE 1
+#define DROP_ENABLE 0
 
 // a moving avg for debugging
 #define MOVAVG 0
@@ -140,6 +140,9 @@ volatile byte ultsready = 0;
 #if IPS_TX_ENABLE
 volatile byte ips_ready = 0;
 byte ips_read = 0;
+
+byte ips_tx_on = 1;
+
 #endif
 
 volatile byte serialready = 0;
@@ -327,7 +330,7 @@ IMUFilt;
 #if IPS_TX_ENABLE
 
 #define IPS_PIN 2
-
+unsigned long ipstime = 0;
 
 #endif
 
@@ -335,7 +338,7 @@ IMUFilt;
 
 #if DROP_ENABLE
 
-#define DROP_PIN 2
+#define DROP_PIN 3
 
 
 #endif
@@ -852,21 +855,25 @@ void loop() {
 
   /*----------------------------------------------------------------------------------------------------------------------------*/
 #if IPS_TX_ENABLE
+ if(ips_tx_on){
   if(ips_ready){
 
-    if(ips_read){
+    if(ips_read ){
 
+      if(((micros() - ipstime) >= 3000L)){
       digitalWrite(IPS_PIN,HIGH);
       ips_read = 0;
       ips_ready = 0;
-
+      }
     }
     else{
       digitalWrite(IPS_PIN,LOW);
+      ipstime = micros();
       ips_read = 1;
     }
 
   }//ipsready
+ }// tx on
 #endif
   /*----------------------------------------------------------------------------------------------------------------------------*/
 
@@ -2161,7 +2168,7 @@ ISR(TIMER2_OVF_vect){
   if( ovfcnt == 9 ){ // 250khz/2*samplerate*256
 
 #if DBG_ISR
-     blinkstate = !blinkstate;
+     blinkstate = ~blinkstate;
        digitalWrite(DBGPIN,blinkstate);
 #endif
     // digitalWrite(LED_PIN, blinkState); // 250khz/samplerate
@@ -2173,7 +2180,7 @@ ISR(TIMER2_OVF_vect){
     motcont = 1;
     ovfcnt = 0;
 
-    if(ovfcnt2 == 2){
+    if(ovfcnt2 == 7){
 #if IPS_TX_ENABLE
       ips_ready =1;
 #endif

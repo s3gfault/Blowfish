@@ -92,13 +92,13 @@ int dbg1 = 0,dbg2 = 0,dbg3 = 0;
 // select how the motors shoudl be stopped
 #define MOT_SHORT 0
 #define MOT_FREERUN 1
-#define MOT_HALTMODE MOT_FREERUN
+#define MOT_HALTMODE MOT_SHORT
 
 #define MC_GYRO_OMEGA 1
 #define MC_GYRO_PHI 2
 #define MC_MAGN 3
 #define MC_GYRO_MAGN 4
-#define MOT_CONT_METH MC_MAGN
+#define MOT_CONT_METH MC_GYRO_PHI
 
 #define INITMSG 0
 
@@ -352,9 +352,9 @@ unsigned long ipstime = 0;
 #define PID_H (1.0f/ACCEL_GYRO_SAMPLERATE_HZ)
 
 
-#define PID_MOT_RL_KP 1.3f
+#define PID_MOT_RL_KP 3.0f
 #define PID_MOT_RL_KI 0.0f//0.13f
-#define PID_MOT_RL_KD 0.17f
+#define PID_MOT_RL_KD 500.0f//0.17f
 
 #define PID_MOT_RL_GAIN PID_GAIN
 #define PID_MOT_RL_H PID_H
@@ -1540,7 +1540,7 @@ void loop() {
         if(mot_rl_cont_gyro){
 #if MOT_CONT_METH == MC_GYRO_OMEGA
 
-          dbg1f = pid_rl.step(reg_set_rl_ang,gf.z)
+          dbg1f = pid_rl.step(reg_set_rl_ang,gf.z);
             setMotDirection(deg2rad(dbg1f),reg_set_speed);
 
 #elif MOT_CONT_METH == MC_GYRO_PHI        

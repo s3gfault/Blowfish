@@ -1351,8 +1351,14 @@ void loop() {
             case 'h':
             case 'H':
               {
-                reg_set_h = pidf[0];
-                
+                if(((char) cmd.charAt(3) == 'i') || ((char) cmd.charAt(3) == 'I')){
+                  reg_set_h += pidf[0];
+                }
+                else{
+                  reg_set_h = pidf[0];
+
+                }
+
                 if(mot_alt_cont_auto){             
                   reg_set_h = constrain(reg_set_h,30.0f,300.0f);
                 }
@@ -2289,6 +2295,7 @@ ISR(TIMER2_OVF_vect){
 
 
 } //ISR
+
 
 
 

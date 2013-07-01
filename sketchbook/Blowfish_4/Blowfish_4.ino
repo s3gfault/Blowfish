@@ -1439,6 +1439,34 @@ void loop() {
                 pid_alt.reset();
                 pid_rl.reset();
                 setImuStruct(&gyAng,0.0f,0.0f,0.0f);
+#if MAGN_ENABLE 
+                get_magn_offset = 1;
+                magn_head_rad_avg_cnt = 0;  
+#endif
+                break;
+              }
+            case 'C':
+            case 'c': 
+              {
+
+                switch((char)cmd.charAt(3)){
+
+                case 'r':
+                case 'R':
+                  {
+                    pid_rl.reset();
+                    break;
+                  }
+                case 'h':
+                case 'H':
+                  {
+                    pid_alt.reset();
+                    break;
+                  }
+                default:
+                  break;
+                }
+
                 break;
               }
 #if MAGN_ENABLE 
@@ -2295,6 +2323,7 @@ ISR(TIMER2_OVF_vect){
 
 
 } //ISR
+
 
 
 

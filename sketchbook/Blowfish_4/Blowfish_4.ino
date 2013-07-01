@@ -15,18 +15,18 @@
  The program is divided into four parts: Declaration,Setup, Loop, and the ISR
  
  1. Declaration:
-     In this area all necessary data structure are defined and declared. At the beginning there's a small
-     config section, which allows to en-/ disable and/or change how key parts of the sofware work
+ In this area all necessary data structure are defined and declared. At the beginning there's a small
+ config section, which allows to en-/ disable and/or change how key parts of the sofware work
  
  2. Setup
-     Initializes all used internal and external Hardware
-     
+ Initializes all used internal and external Hardware
+ 
  3. Loop    
-     The loop consists of several if conditionals. They're jumped into when the ISR sets the corresponding flags.
-     If no flags are set, nothing will happen until a flag is set.
-     
+ The loop consists of several if conditionals. They're jumped into when the ISR sets the corresponding flags.
+ If no flags are set, nothing will happen until a flag is set.
+ 
  4. ISR
-     This interrupt handler catches the timer overflow interrupt that occurs every millisecond.
+ This interrupt handler catches the timer overflow interrupt that occurs every millisecond.
  
  // TODO: finish
  
@@ -57,7 +57,7 @@
 #define DBG_ISR 1
 
 #if  DBG_ISR
-     byte blinkstate =0;
+byte blinkstate =0;
 #endif
 float dbg1f=0.0f,dbg2f=0.0f,dbg3f=0.0f;
 int dbg1 = 0,dbg2 = 0,dbg3 = 0;
@@ -76,7 +76,7 @@ int dbg1 = 0,dbg2 = 0,dbg3 = 0;
 #define GYRO_ENABLE 1
 #define IPS_TX_ENABLE 1
 #define DROP_ENABLE 0
-
+#define WATCHDOG_ENABLE 1
 // a moving avg for debugging
 #define MOVAVG 0
 
@@ -340,6 +340,16 @@ unsigned long ipstime = 0;
 
 #define DROP_PIN 3
 
+#endif
+
+
+#if WATCHDOG_ENABLE
+
+#define WD_TIME 5000  // [ms]
+
+unsigned long wd_time = 0; // store the time;
+byte wd_enable = 0; // ed main switch
+byte wd_switch = 0; // must be set to 1 periodically, or else emergency mode will be activated
 
 #endif
 
@@ -352,9 +362,9 @@ unsigned long ipstime = 0;
 #define PID_H (1.0f/ACCEL_GYRO_SAMPLERATE_HZ)
 
 
-#define PID_MOT_RL_KP 3.0f
-#define PID_MOT_RL_KI 0.0f//0.13f
-#define PID_MOT_RL_KD 500.0f//0.17f
+#define PID_MOT_RL_KP 0.5f
+#define PID_MOT_RL_KI 0.03f//0.13f
+#define PID_MOT_RL_KD 100.0f//0.17f
 
 #define PID_MOT_RL_GAIN PID_GAIN
 #define PID_MOT_RL_H PID_H
@@ -438,7 +448,7 @@ float reg_set_h = 130.0f;
 #define MOT_ALT 1
 
 /* in1 in2 
- 0    0    stopp
+ 0    0    stop
  1    0     r1
  0     1    r2
  1     1  SHORT
@@ -855,25 +865,25 @@ void loop() {
 
   /*----------------------------------------------------------------------------------------------------------------------------*/
 #if IPS_TX_ENABLE
- if(ips_tx_on){
-  if(ips_ready){
+  if(ips_tx_on){
+    if(ips_ready){
 
-    if(ips_read ){
+      if(ips_read ){
 
-      if(((micros() - ipstime) >= 3000L)){
-      digitalWrite(IPS_PIN,HIGH);
-      ips_read = 0;
-      ips_ready = 0;
+        if(((micros() - ipstime) >= 3000L)){
+          digitalWrite(IPS_PIN,HIGH);
+          ips_read = 0;
+          ips_ready = 0;
+        }
       }
-    }
-    else{
-      digitalWrite(IPS_PIN,LOW);
-      ipstime = micros();
-      ips_read = 1;
-    }
+      else{
+        digitalWrite(IPS_PIN,LOW);
+        ipstime = micros();
+        ips_read = 1;
+      }
 
-  }//ipsready
- }// tx on
+    }//ipsready
+  }// tx on
 #endif
   /*----------------------------------------------------------------------------------------------------------------------------*/
 
@@ -1154,8 +1164,8 @@ void loop() {
         get_magn_offset = 1;
         magn_head_rad_avg_cnt = 0;
 #endif
-        Serial.println("###");
-        Serial.println(!-5);
+        //     Serial.println("###");
+        //   Serial.println(!-5);
         setImuStruct(&gyAng,0.0f,0.0f,0.0f);
 
       }
@@ -1196,6 +1206,18 @@ void loop() {
       else if(cmd.substring(1).equals("cmm") || cmd.substring(1).equals("CMM")){
         mot_rl_cont_gyro = 0;
       }
+#if WATCHDOG_ENABLE
+      else if(cmd.substring(1).equals("wde") || cmd.substring(1).equals("WDE")){
+        wd_enable = 1;
+        wd_switch = 1; 
+      }
+      else if(cmd.substring(1).equals("wdd") || cmd.substring(1).equals("WDD")){
+        wd_enable = 0;
+      }
+      else if(cmd.substring(1).equals("wdr") || cmd.substring(1).equals("WDR")){
+        wd_switch = 1;
+      }
+#endif      
       else
       {
 
@@ -1312,7 +1334,16 @@ void loop() {
             case 'i':
             case 'I':
               {
-                reg_set_rl_ang = constrain(pidf[0],-90.0f,90.0f);          
+
+                if(((char) cmd.charAt(3) == 'i') || ((char) cmd.charAt(3) == 'I')){
+
+                  reg_set_rl_ang += pidf[0];
+                  constrain(reg_set_rl_ang,-90.0f,90.0f);          
+                }
+                else{
+
+                  reg_set_rl_ang = constrain(pidf[0],-90.0f,90.0f);          
+                }
                 setImuStruct(&gyAng,gyAng.x,gyAng.y,0.0f);
                 break;
 
@@ -1320,8 +1351,16 @@ void loop() {
             case 'h':
             case 'H':
               {
+                reg_set_h = pidf[0];
+                
+                if(mot_alt_cont_auto){             
+                  reg_set_h = constrain(reg_set_h,30.0f,300.0f);
+                }
+                else{
 
-                reg_set_h = constrain(pidf[0],30.0f,300.0f);
+                  reg_set_h = constrain(reg_set_h,-255.0f,255.0f);
+                }
+
                 break;
               }
             default:
@@ -1505,7 +1544,15 @@ void loop() {
 
     Serial.print("dirGy:\t");
     Serial.println(mot_rl_cont_gyro);
+#if WATCHDOG_ENABLE
 
+    Serial.print("Wd:\t");
+    Serial.println(wd_enable);
+
+    Serial.print("Wd_state:\t");
+    Serial.println(wd_switch);
+
+#endif
     Serial.print("RAM:\t");
     Serial.println(freeRam());
 
@@ -1526,7 +1573,35 @@ void loop() {
 
   /*----------------------------------------------------------------------------------------------------------------------------*/
 
+#if WATCHDOG_ENABLE
+  if(wd_enable && main_enable){
+    if( (millis() - wd_time) >= WD_TIME){
+
+      if(wd_switch){
+
+        wd_switch= 0;
+      }
+      else{
+
+        main_enable = 0;
+
+      }
+
+      wd_time = millis();
+    }
+
+  }
+
+#endif
+
+  /*----------------------------------------------------------------------------------------------------------------------------*/
+
   if(main_enable){
+
+
+
+
+
     if(motcont){
 
 #if DBGOUTMODE == 9
@@ -1541,7 +1616,7 @@ void loop() {
 #if MOT_CONT_METH == MC_GYRO_OMEGA
 
           dbg1f = pid_rl.step(reg_set_rl_ang,gf.z);
-            setMotDirection(deg2rad(dbg1f),reg_set_speed);
+          setMotDirection(deg2rad(dbg1f),reg_set_speed);
 
 #elif MOT_CONT_METH == MC_GYRO_PHI        
 
@@ -1562,16 +1637,16 @@ void loop() {
             float magn_delta =  magn_head_deg -rad2deg(atan2(lowpass_magn_y.getY(1), lowpass_magn_x.getY(1))) ;
 
             //look if the heading angle wrapped, if yes undo it
-            if( magn_delta  > 270.0f ){
-              magn_pid_in -= 360.0f;
-
-            }
-            else if (magn_delta  < -270.0f){
-
-              magn_pid_in += 360.0f;
-
-            }
-
+            /*   if( magn_delta  > 270.0f ){
+             magn_pid_in -= 360.0f;
+             
+             }
+             else if (magn_delta  < -270.0f){
+             
+             magn_pid_in += 360.0f;
+             
+             }
+             */
             // wrap the whole thing if it exceeds the limits            
             if(magn_pid_in < -180.0f){
               magn_pid_in += 360.0f;
@@ -1633,7 +1708,7 @@ void loop() {
       }
       else{
 
-        setMotAlt(constrain((int)reg_set_h,0,255));
+        setMotAlt(constrain((int)reg_set_h,-255,255));
 
 
       }
@@ -2168,8 +2243,8 @@ ISR(TIMER2_OVF_vect){
   if( ovfcnt == 9 ){ // 250khz/2*samplerate*256
 
 #if DBG_ISR
-     blinkstate = ~blinkstate;
-       digitalWrite(DBGPIN,blinkstate);
+    blinkstate = ~blinkstate;
+    digitalWrite(DBGPIN,blinkstate);
 #endif
     // digitalWrite(LED_PIN, blinkState); // 250khz/samplerate
     //accelgyro.getMotion6(&ar.ax, &ar.ay, &ar.az, &gr.gx, &gr.gy, &gr.gz);
@@ -2214,6 +2289,10 @@ ISR(TIMER2_OVF_vect){
 
 
 } //ISR
+
+
+
+
 
 
 

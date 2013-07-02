@@ -841,20 +841,14 @@ void loop() {
     t[4] = micros();
 #endif
     ultsready=0;
-    if(ultsread){
+   
       ults_h_raw = (float) ultrasonic.read();
       ultrasonic.update();
       ults_h = lowpass_ults_h.step(ults_h_raw);
 
-      ultsread = 0;
-    }
-    else{
-
-      ultrasonic.update();
-
-      ultsread = 1;
-
-    }
+   //   ultsread = 1;
+    
+  
 
 #if DBGOUTMODE == 9
     t[4] = micros() - t[4];
@@ -1214,7 +1208,7 @@ void loop() {
 #if WATCHDOG_ENABLE
       else if(cmd.substring(1).equals("wde") || cmd.substring(1).equals("WDE")){
         wd_enable = 1;
-       // wd_switch = 1; 
+        // wd_switch = 1; 
       }
       else if(cmd.substring(1).equals("wdd") || cmd.substring(1).equals("WDD")){
         wd_enable = 0;
@@ -2294,30 +2288,41 @@ ISR(TIMER2_OVF_vect){
     motcont = 1;
     ovfcnt = 0;
 
-    if(ovfcnt2 == 7){
+    if(ovfcnt2 == 4){
+      if( ovfcnt3 ){
 #if IPS_TX_ENABLE
-      ips_ready =1;
+        ips_ready =1;
 #endif
-      ovfcnt2=0;
+        ovfcnt3 = 0;
+      }
+      else{
+#if ULTS_ENABLE 
+        ultsready = 1;
+#endif
+        ovfcnt3 = 1;
+
+      }
+      ovfcnt2=0; 
+
     }
     else{
       ovfcnt2++;
     }
-
+    /*
     if(ovfcnt3 == 1){
-#if ULTS_ENABLE 
-      ultsready = 1;
-#endif
-
-
-      ovfcnt3 = 0;
-    }
-    else{
-
-      ovfcnt3++;
-
-    }
-
+     #if ULTS_ENABLE 
+     // ultsready = 1;
+     #endif
+     
+     
+     ovfcnt3 = 0;
+     }
+     else{
+     
+     ovfcnt3++;
+     
+     }
+     */
 
   }
   else{
@@ -2328,6 +2333,8 @@ ISR(TIMER2_OVF_vect){
 
 
 } //ISR
+
+
 
 
 

@@ -1164,6 +1164,11 @@ void loop() {
         get_magn_offset = 1;
         magn_head_rad_avg_cnt = 0;
 #endif
+#if WATCHDOG_ENABLE
+        if(wd_enable){
+          wd_switch = 1;
+        }
+#endif
         //     Serial.println("###");
         //   Serial.println(!-5);
         setImuStruct(&gyAng,0.0f,0.0f,0.0f);
@@ -1209,7 +1214,7 @@ void loop() {
 #if WATCHDOG_ENABLE
       else if(cmd.substring(1).equals("wde") || cmd.substring(1).equals("WDE")){
         wd_enable = 1;
-        wd_switch = 1; 
+       // wd_switch = 1; 
       }
       else if(cmd.substring(1).equals("wdd") || cmd.substring(1).equals("WDD")){
         wd_enable = 0;
@@ -1564,7 +1569,7 @@ void loop() {
     Serial.print("sc:\t");
     Serial.println(reg_set_speed);
 #if MAGN_ENABLE
-    Serial.print("mg_offs:\t");
+    Serial.print("mgOfs:\t");
     Serial.println(magn_offset_deg);
 #endif
     Serial.print("Main:\t");
@@ -1583,7 +1588,7 @@ void loop() {
     Serial.print("Wd:\t");
     Serial.println(wd_enable);
 
-    Serial.print("Wd_state:\t");
+    Serial.print("Wd_st:\t");
     Serial.println(wd_switch);
 
 #endif
@@ -2323,6 +2328,7 @@ ISR(TIMER2_OVF_vect){
 
 
 } //ISR
+
 
 
 

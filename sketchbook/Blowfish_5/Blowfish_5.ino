@@ -41,9 +41,7 @@
 #include <MPU6050.h>
 #include <HMC5883L.h>
 #include <SRF02.h>
-
 #include <IIR.h>
-
 #include <PID.h>
 //#include <MadgwickAHRS.h>
 
@@ -351,6 +349,19 @@ unsigned long wd_time = 0; // store the time;
 byte wd_enable = 0; // ed main switch
 byte wd_switch = 0; // must be set to 1 periodically, or else emergency mode will be activated
 
+#if ULTS_ENABLE
+float wd_ults_avg = 0.0f;
+int wd_ults_avg_cnt = 1;
+
+#define WD_ULTS_AVG_MAXCOUNT 50 // 10 secs
+#define WD_ULTS_MAX 305
+#define WD_ULTS_MIN 29
+
+#define WD_EN 1
+#define WD_REG 2
+#define WD_BEHAV WD_REG
+
+#endif
 #endif
 
 
@@ -841,14 +852,38 @@ void loop() {
     t[4] = micros();
 #endif
     ultsready=0;
-   
-      ults_h_raw = (float) ultrasonic.read();
-      ultrasonic.update();
-      ults_h = lowpass_ults_h.step(ults_h_raw);
 
-   //   ultsread = 1;
-    
-  
+    ults_h_raw = (float) ultrasonic.read();
+    ultrasonic.update();
+    ults_h = lowpass_ults_h.step(ults_h_raw);
+
+    //   ultsread = 1;
+
+#if WATCHDOG_ENABLE
+
+    wd_ults_avg += ((ults_h - wd_ults_avg)/((float)(wd_ults_avg_cnt+1)));
+    wd_ults_avg_cnt++;
+    if( wd_ults_avg_cnt == WD_ULTS_AVG_MAXCOUNT){
+
+      if( wd_ults_avg > WD_ULTS_MAX || wd_ults_avg < WD_ULTS_MIN){
+
+#if WD_BEHAV == WD_EN        
+        wd_enable = 1;
+        wd_switch = 0;
+#elif WD_BEHAV == WD_REG
+      
+        mot_alt_cont_auto = 0;
+        reg_set_h = 70;
+
+#endif
+      }
+
+
+
+      wd_ults_avg = ults_h;
+      wd_ults_avg_cnt = 1;
+    }
+#endif
 
 #if DBGOUTMODE == 9
     t[4] = micros() - t[4];
@@ -1625,6 +1660,9 @@ void loop() {
 
   }
 
+
+
+
 #endif
 
   /*----------------------------------------------------------------------------------------------------------------------------*/
@@ -2333,6 +2371,8 @@ ISR(TIMER2_OVF_vect){
 
 
 } //ISR
+
+
 
 
 

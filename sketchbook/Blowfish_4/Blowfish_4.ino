@@ -182,7 +182,7 @@ byte mot_rl_cont_gyro = 0;
 
 //general:
 
-#define ACCEL_GYRO_SAMPLERATE_HZ 50
+#define ACCEL_GYRO_SAMPLERATE_HZ 49.26
 //ACCELEROMETE
 
 #if ACCEL_ENABLE
@@ -257,7 +257,7 @@ byte simpcnt = 0;
 //magnetometer
 #if MAGN_ENABLE
 
-#define MAGN_SAMPLERATE_HZ 50.0f
+#define MAGN_SAMPLERATE_HZ 49.26f
 
 #define LP_MAGN_ORDER 1
 #define LP_MAGN_CUTOFF_HZ 2.0f
@@ -289,8 +289,8 @@ int magn_head_rad_avg_cnt = 1;
 
 
 
-#define ULTS_SAMPLERATE_HZ 10.0f
-#define ULTS_INTERVAL 100
+#define ULTS_SAMPLERATE_HZ 5.0f
+#define ULTS_INTERVAL 200
 #define LP_ULTS_ORDER 1
 #define LP_ULTS_CUTOFF_HZ 4.0f
 #define LP_ULTS_RC (1.0f/LP_ULTS_CUTOFF_HZ)
@@ -2271,9 +2271,9 @@ void serialEvent(){
 
 
 ISR(TIMER2_OVF_vect){
-  // Timer runs at 250khz
+  // Timer runs at 125khz
 
-  if( ovfcnt == 9 ){ // 250khz/2*samplerate*256
+  if( ovfcnt == 9 ){ // 125khz/samplerate*256
 
 #if DBG_ISR
     blinkstate = ~blinkstate;

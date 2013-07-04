@@ -73,7 +73,7 @@ int dbg1 = 0,dbg2 = 0,dbg3 = 0;
 #define ACCEL_ENABLE 0
 #define GYRO_ENABLE 1
 #define IPS_TX_ENABLE 1
-#define DROP_ENABLE 0
+#define DROP_ENABLE 1
 #define WATCHDOG_ENABLE 1
 // a moving avg for debugging
 #define MOVAVG 0
@@ -288,9 +288,9 @@ int magn_head_rad_avg_cnt = 1;
 
 
 #define ULTS_SAMPLERATE_HZ 5.0f
-#define ULTS_INTERVAL 200
+#define ULTS_INTERVAL 150
 #define LP_ULTS_ORDER 1
-#define LP_ULTS_CUTOFF_HZ 4.0f
+#define LP_ULTS_CUTOFF_HZ 2.0f
 #define LP_ULTS_RC (1.0f/LP_ULTS_CUTOFF_HZ)
 
 float lp_ults_alpha = ((1.0f/ULTS_SAMPLERATE_HZ)/(LP_ULTS_RC+(1.0f/ULTS_SAMPLERATE_HZ)));
@@ -353,7 +353,7 @@ byte wd_switch = 0; // must be set to 1 periodically, or else emergency mode wil
 float wd_ults_avg = 0.0f;
 int wd_ults_avg_cnt = 1;
 
-#define WD_ULTS_AVG_MAXCOUNT 50 // 10 secs
+#define WD_ULTS_AVG_MAXCOUNT 20 // 4 secs
 #define WD_ULTS_MAX 305
 #define WD_ULTS_MIN 29
 
@@ -607,6 +607,9 @@ void loop() {
     imudataready = 1;
 
   }//imuready
+
+
+
 
   if(imudataready){
 
@@ -864,23 +867,23 @@ void loop() {
     wd_ults_avg += ((ults_h - wd_ults_avg)/((float)(wd_ults_avg_cnt+1)));
     wd_ults_avg_cnt++;
     if( wd_ults_avg_cnt == WD_ULTS_AVG_MAXCOUNT){
-
-      if( wd_ults_avg > WD_ULTS_MAX || wd_ults_avg < WD_ULTS_MIN){
+//Serial.println(wd_ults_avg);
+      if( (wd_ults_avg > WD_ULTS_MAX || wd_ults_avg < WD_ULTS_MIN) && main_enable){
 
 #if WD_BEHAV == WD_EN        
         wd_enable = 1;
         wd_switch = 0;
 #elif WD_BEHAV == WD_REG
-      
+
         mot_alt_cont_auto = 0;
-        reg_set_h = 70;
+        reg_set_h = -70;
 
 #endif
       }
 
 
 
-      wd_ults_avg = ults_h;
+      wd_ults_avg = 0;
       wd_ults_avg_cnt = 1;
     }
 #endif
@@ -1219,6 +1222,8 @@ void loop() {
       else if(cmd.substring(1).equals("drop") || cmd.substring(1).equals("DROP")){
 
         digitalWrite(DROP_PIN,HIGH); 
+/*       delayMicroseconds(500);
+        digitalWrite(DROP_PIN,LOW); */
 
       }
 #endif       
@@ -1737,7 +1742,15 @@ void loop() {
             //  magn_pid_in = constrain(magn_pid_in,-90.0f,90.0f);
 
             dbg1f = pid_rl.step(reg_set_rl_ang,magn_pid_in);
-            setMotDirection(deg2rad(dbg1f),reg_set_speed);
+           setMotDirection(deg2rad(dbg1f),reg_set_speed);
+
+
+            Serial.print("pidin: ");
+              Serial.print(magn_pid_in);
+            Serial.print(" pido: ");
+            Serial.print(dbg1f);
+
+            Serial.println();
 
           }
 #endif          
@@ -1775,7 +1788,9 @@ void loop() {
         }
 
         dbg2f = pid_alt.step(reg_set_h,ults_h);
+
         setMotAlt((int)dbg2f);
+
       }
       else{
 
@@ -2371,6 +2386,7 @@ ISR(TIMER2_OVF_vect){
 
 
 } //ISR
+
 
 
 

@@ -15,18 +15,18 @@
  The program is divided into four parts: Declaration,Setup, Loop, and the ISR
  
  1. Declaration:
-     In this area all necessary data structure are defined and declared. At the beginning there's a small
-     config section, which allows to en-/ disable and/or change how key parts of the sofware work
+ In this area all necessary data structure are defined and declared. At the beginning there's a small
+ config section, which allows to en-/ disable and/or change how key parts of the sofware work
  
  2. Setup
-     Initializes all used internal and external Hardware
-     
+ Initializes all used internal and external Hardware
+ 
  3. Loop    
-     The loop consists of several if conditionals. They're jumped into when the ISR sets the corresponding flags.
-     If no flags are set, nothing will happen until a flag is set.
-     
+ The loop consists of several if conditionals. They're jumped into when the ISR sets the corresponding flags.
+ If no flags are set, nothing will happen until a flag is set.
+ 
  4. ISR
-     This interrupt handler catches the timer overflow interrupt that occurs every millisecond.
+ This interrupt handler catches the timer overflow interrupt that occurs every millisecond.
  
  // TODO: finish
  
@@ -57,7 +57,7 @@
 #define DBG_ISR 1
 
 #if  DBG_ISR
-     byte blinkstate =0;
+byte blinkstate =0;
 #endif
 float dbg1f=0.0f,dbg2f=0.0f,dbg3f=0.0f;
 int dbg1 = 0,dbg2 = 0,dbg3 = 0;
@@ -352,9 +352,9 @@ unsigned long ipstime = 0;
 #define PID_H (1.0f/ACCEL_GYRO_SAMPLERATE_HZ)
 
 
-#define PID_MOT_RL_KP 3.0f
-#define PID_MOT_RL_KI 0.0f//0.13f
-#define PID_MOT_RL_KD 500.0f//0.17f
+#define PID_MOT_RL_KP 0.5f
+#define PID_MOT_RL_KI 0.03f//0.13f
+#define PID_MOT_RL_KD 100.0f//0.17f
 
 #define PID_MOT_RL_GAIN PID_GAIN
 #define PID_MOT_RL_H PID_H
@@ -855,25 +855,25 @@ void loop() {
 
   /*----------------------------------------------------------------------------------------------------------------------------*/
 #if IPS_TX_ENABLE
- if(ips_tx_on){
-  if(ips_ready){
+  if(ips_tx_on){
+    if(ips_ready){
 
-    if(ips_read ){
+      if(ips_read ){
 
-      if(((micros() - ipstime) >= 3000L)){
-      digitalWrite(IPS_PIN,HIGH);
-      ips_read = 0;
-      ips_ready = 0;
+        if(((micros() - ipstime) >= 3000L)){
+          digitalWrite(IPS_PIN,HIGH);
+          ips_read = 0;
+          ips_ready = 0;
+        }
       }
-    }
-    else{
-      digitalWrite(IPS_PIN,LOW);
-      ipstime = micros();
-      ips_read = 1;
-    }
+      else{
+        digitalWrite(IPS_PIN,LOW);
+        ipstime = micros();
+        ips_read = 1;
+      }
 
-  }//ipsready
- }// tx on
+    }//ipsready
+  }// tx on
 #endif
   /*----------------------------------------------------------------------------------------------------------------------------*/
 
@@ -1541,7 +1541,7 @@ void loop() {
 #if MOT_CONT_METH == MC_GYRO_OMEGA
 
           dbg1f = pid_rl.step(reg_set_rl_ang,gf.z);
-            setMotDirection(deg2rad(dbg1f),reg_set_speed);
+          setMotDirection(deg2rad(dbg1f),reg_set_speed);
 
 #elif MOT_CONT_METH == MC_GYRO_PHI        
 
@@ -2168,8 +2168,8 @@ ISR(TIMER2_OVF_vect){
   if( ovfcnt == 9 ){ // 250khz/2*samplerate*256
 
 #if DBG_ISR
-     blinkstate = ~blinkstate;
-       digitalWrite(DBGPIN,blinkstate);
+    blinkstate = ~blinkstate;
+    digitalWrite(DBGPIN,blinkstate);
 #endif
     // digitalWrite(LED_PIN, blinkState); // 250khz/samplerate
     //accelgyro.getMotion6(&ar.ax, &ar.ay, &ar.az, &gr.gx, &gr.gy, &gr.gz);
@@ -2214,6 +2214,7 @@ ISR(TIMER2_OVF_vect){
 
 
 } //ISR
+
 
 
 

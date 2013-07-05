@@ -74,7 +74,7 @@ int dbg1 = 0,dbg2 = 0,dbg3 = 0;
 #define GYRO_ENABLE 1
 #define IPS_TX_ENABLE 1
 #define DROP_ENABLE 1
-#define WATCHDOG_ENABLE 1
+#define WATCHDOG_ENABLE 0
 // a moving avg for debugging
 #define MOVAVG 0
 
@@ -373,9 +373,9 @@ int wd_ults_avg_cnt = 1;
 #define PID_H (1.0f/ACCEL_GYRO_SAMPLERATE_HZ)
 
 
-#define PID_MOT_RL_KP 0.5f
-#define PID_MOT_RL_KI 0.03f//0.13f
-#define PID_MOT_RL_KD 100.0f//0.17f
+#define PID_MOT_RL_KP 1.5f
+#define PID_MOT_RL_KI 0.4f//0.13f
+#define PID_MOT_RL_KD 500.0f//0.17f
 
 #define PID_MOT_RL_GAIN PID_GAIN
 #define PID_MOT_RL_H PID_H
@@ -398,9 +398,9 @@ float pid_mot_rl_conservative[3] = {
 PID pid_rl(pid_mot_rl,PID_MOT_RL_GAIN,3,PID_MOT_RL_H);
 
 
-#define PID_MOT_ALT_KP 0.4f
-#define PID_MOT_ALT_KI 0.0f//0.015f
-#define PID_MOT_ALT_KD 0.0f//0.2f
+#define PID_MOT_ALT_KP 0.5f
+#define PID_MOT_ALT_KI 0.05f//0.015f
+#define PID_MOT_ALT_KD 10.0f//0.2f
 
 #define PID_MOT_ALT_AGGRO_KP 1.0f
 #define PID_MOT_ALT_AGGRO_KI 0.0f//0.015f
@@ -867,7 +867,7 @@ void loop() {
     wd_ults_avg += ((ults_h - wd_ults_avg)/((float)(wd_ults_avg_cnt+1)));
     wd_ults_avg_cnt++;
     if( wd_ults_avg_cnt == WD_ULTS_AVG_MAXCOUNT){
-//Serial.println(wd_ults_avg);
+      //Serial.println(wd_ults_avg);
       if( (wd_ults_avg > WD_ULTS_MAX || wd_ults_avg < WD_ULTS_MIN) && main_enable){
 
 #if WD_BEHAV == WD_EN        
@@ -1222,8 +1222,8 @@ void loop() {
       else if(cmd.substring(1).equals("drop") || cmd.substring(1).equals("DROP")){
 
         digitalWrite(DROP_PIN,HIGH); 
-/*       delayMicroseconds(500);
-        digitalWrite(DROP_PIN,LOW); */
+        /*       delayMicroseconds(500);
+         digitalWrite(DROP_PIN,LOW); */
 
       }
 #endif       
@@ -1707,10 +1707,14 @@ void loop() {
 #if MAGN_ENABLE
           if(!get_magn_offset){
 
-            float magn_pid_in = magn_head_deg-magn_offset_deg;
+            float magn_pid_in = magn_head_deg - magn_offset_deg;
+            /*
+            Serial.print(" pidinraw: ");
+             Serial.print(magn_pid_in);
+             */
 
             // calculate the derivative of the angle 
-            float magn_delta =  magn_head_deg -rad2deg(atan2(lowpass_magn_y.getY(1), lowpass_magn_x.getY(1))) ;
+            //   float magn_delta =  magn_head_deg -rad2deg(atan2(lowpass_magn_y.getY(1), lowpass_magn_x.getY(1))) ;
 
             //look if the heading angle wrapped, if yes undo it
             /*   if( magn_delta  > 270.0f ){
@@ -1735,22 +1739,30 @@ void loop() {
             }
 
             // negate for the conroller
-            magn_pid_in *= (-1.0f);                  
+            // magn_pid_in *= (-1.0f);                  
 
 
 
             //  magn_pid_in = constrain(magn_pid_in,-90.0f,90.0f);
 
             dbg1f = pid_rl.step(reg_set_rl_ang,magn_pid_in);
-           setMotDirection(deg2rad(dbg1f),reg_set_speed);
+            setMotDirection(deg2rad(dbg1f),reg_set_speed);
+            /*
 
-
-            Serial.print("pidin: ");
-              Serial.print(magn_pid_in);
-            Serial.print(" pido: ");
-            Serial.print(dbg1f);
-
-            Serial.println();
+             Serial.print("magn: ");
+             Serial.print(magn_head_deg);
+             Serial.print(" -: ");            
+             Serial.print(magn_offset_deg);
+             Serial.print("    ");
+             Serial.print(" pidin: ");
+             Serial.print(magn_pid_in);
+             Serial.print(" pido: ");
+             Serial.print(dbg1f);
+             Serial.print(" Gy: ");
+             Serial.print(gyAng.z);
+             Serial.println();
+             Serial.flush();
+             */
 
           }
 #endif          
@@ -1767,7 +1779,7 @@ void loop() {
       } 
 
       if(mot_alt_cont_auto){
-
+/*
         float e = abs(reg_set_h - ults_h);
 
 
@@ -1786,6 +1798,9 @@ void loop() {
           pid_alt.setCoeffs(pid_mot_alt_conservative);
           //            pid_alt.setIerr(0.0f);
         }
+
+
+*/
 
         dbg2f = pid_alt.step(reg_set_h,ults_h);
 
@@ -2178,12 +2193,13 @@ void setMotDirection(float angl,int sp0){
 #define MOT_L_THRES 7
   sp0 = constrain(sp0,-128,128);
   angl = constrain(angl,-90,90);
+
   int spr =  ((int)(sp0*sin(angl) +sp0)  );
   int spl = ((int)(sp0*-sin(angl)  +sp0)  );
 
   if((sp0 == 0) && (angl != 0.0f)){
-    spr = (int)(128*sin(angl)  );
-    spl =  (int)(128*(-sin(angl)) );
+    spr = (int)(64*sin(angl)  );
+    spl =  (int)(64*(-sin(angl)) );
 
   }
 
@@ -2386,6 +2402,10 @@ ISR(TIMER2_OVF_vect){
 
 
 } //ISR
+
+
+
+
 
 
 

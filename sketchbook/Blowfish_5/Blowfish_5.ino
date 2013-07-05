@@ -373,9 +373,9 @@ int wd_ults_avg_cnt = 1;
 #define PID_H (1.0f/ACCEL_GYRO_SAMPLERATE_HZ)
 
 
-#define PID_MOT_RL_KP 1.5f
-#define PID_MOT_RL_KI 0.4f//0.13f
-#define PID_MOT_RL_KD 500.0f//0.17f
+#define PID_MOT_RL_KP 0.5f
+#define PID_MOT_RL_KI 0.03f//0.13f
+#define PID_MOT_RL_KD 100.0f//0.17f
 
 #define PID_MOT_RL_GAIN PID_GAIN
 #define PID_MOT_RL_H PID_H
@@ -398,15 +398,15 @@ float pid_mot_rl_conservative[3] = {
 PID pid_rl(pid_mot_rl,PID_MOT_RL_GAIN,3,PID_MOT_RL_H);
 
 
-#define PID_MOT_ALT_KP 0.5f
-#define PID_MOT_ALT_KI 0.05f//0.015f
-#define PID_MOT_ALT_KD 10.0f//0.2f
+#define PID_MOT_ALT_KP 0.7f
+#define PID_MOT_ALT_KI 0.07f//0.015f
+#define PID_MOT_ALT_KD 200.0f//0.2f
 
-#define PID_MOT_ALT_AGGRO_KP 1.0f
+#define PID_MOT_ALT_AGGRO_KP 0.0f // 1.0f
 #define PID_MOT_ALT_AGGRO_KI 0.0f//0.015f
 #define PID_MOT_ALT_AGGRO_KD 0.0f//0.2f
 
-#define PID_MOT_ALT_CONSERVATIVE_KP 0.2f
+#define PID_MOT_ALT_CONSERVATIVE_KP 0.0f //0.2f
 #define PID_MOT_ALT_CONSERVATIVE_KI 0.0f //0.015f
 #define PID_MOT_ALT_CONSERVATIVE_KD 0.0f//0.2f
 

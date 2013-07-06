@@ -930,7 +930,10 @@ void loop() {
     Serial.print("len: ");
     Serial.println(inString.length());
 
-    cmd = inString;
+    
+    
+    cmd = inString.substring(inString.indexOf('b'));
+    
     inString = "";
     Serial.print(cmd);
     //cmd.trim();
@@ -1196,6 +1199,10 @@ void loop() {
         get_magn_offset = 1;
         magn_head_rad_avg_cnt = 0;
 #endif
+
+        pid_rl.reset();
+        pid_alt.reset();
+        
 #if WATCHDOG_ENABLE
         if(wd_enable){
           wd_switch = 1;
@@ -2279,14 +2286,17 @@ int freeRam () {
 
 void serialEvent(){
 
+  
   while(Serial.available() > 0){
 
     char inChar = (char) Serial.read();
+    
 
     inString += inChar;
 
     if(inChar ==  '\n'){
       serialready = 1;
+      
     }
 
 

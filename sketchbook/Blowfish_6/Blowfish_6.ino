@@ -74,7 +74,7 @@ int dbg1 = 0,dbg2 = 0,dbg3 = 0;
 #define GYRO_ENABLE 1
 #define IPS_TX_ENABLE 1
 #define DROP_ENABLE 1
-#define WATCHDOG_ENABLE 0
+#define WATCHDOG_ENABLE 1
 // a moving avg for debugging
 #define MOVAVG 0
 
@@ -2204,7 +2204,7 @@ void setMotDirection(float angl,int sp0){
  // angl = constrain(angl/2,-90,90);
   angl /= 2;
 
-#define MOT_REG_FACT 64.0f
+#define MOT_REG_FACT 350.0f
 
   int spr =  ((int)(MOT_REG_FACT*sin(angl) +sp0)  );
   int spl = ((int)(MOT_REG_FACT*-sin(angl)  +sp0)  );

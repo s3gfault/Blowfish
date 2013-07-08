@@ -930,10 +930,10 @@ void loop() {
     Serial.print("len: ");
     Serial.println(inString.length());
 
-    
-    
+
+
     cmd = inString.substring(inString.indexOf('b'));
-    
+
     inString = "";
     Serial.print(cmd);
     //cmd.trim();
@@ -1202,7 +1202,7 @@ void loop() {
 
         pid_rl.reset();
         pid_alt.reset();
-        
+
 #if WATCHDOG_ENABLE
         if(wd_enable){
           wd_switch = 1;
@@ -1308,7 +1308,7 @@ void loop() {
                     for(byte i = 0 ; i<3;i++){
                       pid_mot_rl[i] = pidf[i];
                     }
-                    pid_rl.reset();
+                 //   pid_rl.reset();
                     break;
 
                   }
@@ -1786,28 +1786,28 @@ void loop() {
       } 
 
       if(mot_alt_cont_auto){
-/*
+        /*
         float e = abs(reg_set_h - ults_h);
-
-
-        if(e > PID_MOT_AGGRO_LIM){
-
-          pid_alt.setCoeffs(pid_mot_alt_aggro);
-          //  pid_alt.setIerr(0.0f);
-        }
-        else if(e> PID_MOT_NORMAL_LIM){
-
-          pid_alt.setCoeffs(pid_mot_alt);
-          //          pid_alt.setIerr(0.0f);
-        }
-        else {
-
-          pid_alt.setCoeffs(pid_mot_alt_conservative);
-          //            pid_alt.setIerr(0.0f);
-        }
-
-
-*/
+         
+         
+         if(e > PID_MOT_AGGRO_LIM){
+         
+         pid_alt.setCoeffs(pid_mot_alt_aggro);
+         //  pid_alt.setIerr(0.0f);
+         }
+         else if(e> PID_MOT_NORMAL_LIM){
+         
+         pid_alt.setCoeffs(pid_mot_alt);
+         //          pid_alt.setIerr(0.0f);
+         }
+         else {
+         
+         pid_alt.setCoeffs(pid_mot_alt_conservative);
+         //            pid_alt.setIerr(0.0f);
+         }
+         
+         
+         */
 
         dbg2f = pid_alt.step(reg_set_h,ults_h);
 
@@ -2201,8 +2201,10 @@ void setMotDirection(float angl,int sp0){
   sp0 = constrain(sp0,-128,128);
   angl = constrain(angl,-90,90);
 
-  int spr =  ((int)(sp0*sin(angl) +sp0)  );
-  int spl = ((int)(sp0*-sin(angl)  +sp0)  );
+#define MOT_REG_FACT 1.25f
+
+  int spr =  ((int)(sp0*MOT_REG_FACT*sin(angl) +sp0)  );
+  int spl = ((int)(sp0*MOT_REG_FACT*-sin(angl)  +sp0)  );
 
   if((sp0 == 0) && (angl != 0.0f)){
     spr = (int)(64*sin(angl)  );
@@ -2286,19 +2288,19 @@ int freeRam () {
 
 void serialEvent(){
 
-  
+
   while(Serial.available() > 0){
 
     char inChar = (char) Serial.read();
-    
 
-    inString += inChar;
+    if(!serialready){
+      inString += inChar;
 
-    if(inChar ==  '\n'){
-      serialready = 1;
-      
+      if(inChar ==  '\n'){
+        serialready = 1;
+        //      break;
+      }
     }
-
 
   }
 
@@ -2412,6 +2414,7 @@ ISR(TIMER2_OVF_vect){
 
 
 } //ISR
+
 
 
 

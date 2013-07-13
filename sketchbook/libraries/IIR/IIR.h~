@@ -1,38 +1,58 @@
 
+/*
+
+ -- Author: Osman Ali (o.ali@tum.de) 
+ 
+ This program is free software; you can redistribute it and/or modify
+ it under the terms of the GNU General Public License as published 
+ by the Free Software Foundation; either version 2 of the License, 
+ or (at your option) any later version.
+
+
+ This program is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. 
+
+
+*/
 
 
 #include <Arduino.h>
-
+#include <stdlib.h>
 class IIR{
 
 public:
 
-	IIR();
-	IIR(float *fbcoeffs,float *fwcoeffs; uint8_t fborder, uint8_t fworder);
+	//IIR();
+	IIR(float *fbcoeffs,float *fwcoeffs, uint8_t fborder, uint8_t fworder);
 
 	void setForwardCoeffs(float *nfwcoeffs);
 	void setForwardCoeffs(uint8_t idx, float ncoeff);	
 
-	void setFeebackCoeffs(float *nfbcoeffs);
+	void setFeedbackCoeffs(float *nfbcoeffs);
 	void setFeedbackCoeffs(uint8_t idx, float ncoeff);	
 
 	void setGain(float);
 
 	float getGain();
-	float step(float in);
+	float step(float x0);
 	uint8_t getForwardOrder();	
 	uint8_t getFeedbackOrder();	
+	float *x ;
+	float *y ;
+
+	float getX(int8_t idx); // 0 -> yn; 1 -> y[n-1] and so on
+	float getY(int8_t idx); // same
 	
 private:
 
-uint8_t fborder;
-uint8_t fworder;
-float *fbcoeffs = null;
-float *fwcoeffs = null;
-int8_t ai = 0;
-int8_t bj = 0;
-float *x = null;
-float *y = null;
-float gain = 1.00f;
+	uint8_t fborder;
+	uint8_t fworder;
+	float *fbcoeffs ;
+	float *fwcoeffs ;
+	int8_t ai ;
+	int8_t bj ;
+	
+	float gain;
 
 };

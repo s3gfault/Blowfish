@@ -1,6 +1,21 @@
 
 
+|/*
 
+ -- Author: Osman Ali (o.ali@tum.de) 
+ 
+ This program is free software; you can redistribute it and/or modify
+ it under the terms of the GNU General Public License as published 
+ by the Free Software Foundation; either version 2 of the License, 
+ or (at your option) any later version.
+
+
+ This program is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. 
+
+
+*/
 
 #include <Arduino.h>
 
@@ -52,11 +67,13 @@ float h ; // time between samples
 float ierr; // integrated error
 
 // vars to adress the arrays x y e
-#if PID_XBUF_ENABLE
+
 int8_t ai;
+
+#if PID_XBUF_ENABLE
+int8_t bi;
 #endif
 
-int8_t bi;
 int8_t ci;
 
 #if PID_XBUF_ENABLE

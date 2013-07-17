@@ -99,7 +99,7 @@ int dbg1 = 0,dbg2 = 0,dbg3 = 0;
 
 // select how you want to comunicate with the baloon
 #define ATOF 1  // type float directly in terminal
-#define HEX  2 // hex needs our base station
+#define HEX  2 // hex needs our base station, currently unsupported/ correctly implemented
 #define SERIALCONV ATOF 
 
 #define HIGHPASS 1
@@ -107,13 +107,13 @@ int dbg1 = 0,dbg2 = 0,dbg3 = 0;
 #define GYRO_FILT LOWPASS   // filter type for the Gyroscope
 
 // select how the motors shoudl be stopped
-#define MOT_SHORT 0
-#define MOT_FREERUN 1
-#define MOT_HALTMODE MOT_SHORT
+#define MOT_SHORT 0  // Short the motors (aka active break)
+#define MOT_FREERUN 1 // freerun
+#define MOT_HALTMODE MOT_SHORT 
 
-#define MC_GYRO_OMEGA 1
-#define MC_GYRO_PHI 2
-#define MC_MAGN 3
+#define MC_GYRO_OMEGA 1 // use angular velocity for control
+#define MC_GYRO_PHI 2 // use the angle for control
+#define MC_MAGN 3    
 #define MC_GYRO_MAGN 4
 #define MOT_CONT_METH MC_GYRO_PHI
 
@@ -135,10 +135,10 @@ SRF02 ultrasonic(0x70,SRF02_CENTIMETERS);
 //prototypes
 //void setStruct( IMUFilt *imu, float xval,float yval,float zval);
 
-String inString;
-String cmd;
+String inString; // where the date from the Serial is stored first
+String cmd; // cleaned up String for command processing
 
-// volatile var for the interrupt routine 
+// volatile var for the interrupt routine (aka interrupt flags)
 
 #if ((GYRO_ENABLE ) || (ACCEL_ENABLE))
 volatile byte imuready = 0;
@@ -183,11 +183,11 @@ byte ultsread = 0;
 #endif
 
 
+// state bytes
+byte main_enable = 0; // en-/disable flight
 
-byte main_enable = 0;
-
-byte mot_rl_cont_auto = 1;
-byte mot_alt_cont_auto = 1;
+byte mot_rl_cont_auto = 1; // directional Control toggle ( 1 = en| 0 = dis)
+byte mot_alt_cont_auto = 1; // hight control toggle
 
 byte mot_rl_cont_gyro = 0;
 
@@ -205,8 +205,8 @@ byte mot_rl_cont_gyro = 0;
 #if ACCEL_ENABLE
 
 #define LP_ACCEL_ORDER 1
-#define LP_ACCEL_CUTOFF_HZ 12.5f
-#define LP_ACCEL_RC (1.0f/LP_ACCEL_CUTOFF_HZ)
+#define LP_ACCEL_CUTOFF_HZ 12.5f // cutoff freq
+#define LP_ACCEL_RC (1.0f/LP_ACCEL_CUTOFF_HZ) // filter time constant
 
 float lp_accel_alpha = ((1.0f/ACCEL_GYRO_SAMPLERATE_HZ)/(LP_ACCEL_RC+(1.0f/ACCEL_GYRO_SAMPLERATE_HZ)));
 
@@ -215,6 +215,7 @@ float lp_accel_b[LP_ACCEL_ORDER+1] = {
 float lp_accel_a[LP_ACCEL_ORDER+1] = {
   1.0f,(1.0f-lp_accel_alpha)};
 
+// filter Objects
 IIR lowpass_accel_x(lp_accel_a,lp_accel_b,LP_ACCEL_ORDER,LP_ACCEL_ORDER);
 IIR lowpass_accel_y(lp_accel_a,lp_accel_b,LP_ACCEL_ORDER,LP_ACCEL_ORDER);
 IIR lowpass_accel_z(lp_accel_a,lp_accel_b,LP_ACCEL_ORDER,LP_ACCEL_ORDER);
@@ -291,13 +292,13 @@ IIR lowpass_magn_x(lp_magn_a,lp_magn_b,LP_MAGN_ORDER,LP_MAGN_ORDER);
 IIR lowpass_magn_y(lp_magn_a,lp_magn_b,LP_MAGN_ORDER,LP_MAGN_ORDER);
 IIR lowpass_magn_z(lp_magn_a,lp_magn_b,LP_MAGN_ORDER,LP_MAGN_ORDER);
 
-float magn_head_rad = 0.0f;
-float magn_head_deg = 0.0f;
-float magn_head_rad_avg = 0.0f;
+float magn_head_rad = 0.0f; // heading angle ( 0 => north)
+float magn_head_deg = 0.0f; // same in degree
+float magn_head_rad_avg = 0.0f; // averaged
 float magn_head_deg_avg = 0.0f;
-float magn_offset_deg = 0.0f;
+float magn_offset_deg = 0.0f;   
 
-int magn_head_rad_avg_cnt = 1;
+int magn_head_rad_avg_cnt = 1;  // counter for the averaging
 //int magn_head_deg_avg_cnt = 1;
 
 
@@ -347,7 +348,7 @@ IMUFilt;
 #if IPS_TX_ENABLE
 
 #define IPS_PIN 2
-unsigned long ipstime = 0;
+unsigned long ipstime = 0; // buffer to track time
 
 #endif
 
@@ -369,29 +370,32 @@ byte wd_enable = 0; // ed main switch
 byte wd_switch = 0; // must be set to 1 periodically, or else emergency mode will be activated
 
 #if ULTS_ENABLE
-float wd_ults_avg = 0.0f;
+float wd_ults_avg = 0.0f; // continious averaging
 int wd_ults_avg_cnt = 1;
 
 #define WD_ULTS_AVG_MAXCOUNT 20 // 4 secs
-#define WD_ULTS_MAX 305
+// limits for the always one failsafe
+#define WD_ULTS_MAX 305 
 #define WD_ULTS_MIN 29
 
-#define WD_EN 1
-#define WD_REG 2
+// behavior
+#define WD_EN 1  // set main to 0 
+#define WD_REG 2 // disable control
 #define WD_BEHAV WD_REG
 
 #endif
 #endif
 
 
-//controller
+//controller 
+
 #define PID_KP 1.0f
 #define PID_KI 1.0f
 #define PID_KD 1.0f
 #define PID_GAIN 1.0f
 #define PID_H (1.0f/ACCEL_GYRO_SAMPLERATE_HZ)
 
-
+// direction
 #define PID_MOT_RL_KP 3.0f
 #define PID_MOT_RL_KI 0.12f//0.13f
 #define PID_MOT_RL_KD 400.0f//0.17f
@@ -416,7 +420,7 @@ float pid_mot_rl_conservative[3] = {
 
 PID pid_rl(pid_mot_rl,PID_MOT_RL_GAIN,3,PID_MOT_RL_H);
 
-
+// altitude
 #define PID_MOT_ALT_KP 0.7f
 #define PID_MOT_ALT_KI 0.07f//0.015f
 #define PID_MOT_ALT_KD 200.0f//0.2f
@@ -454,9 +458,9 @@ PID pid_alt(pid_mot_alt,PID_MOT_ALT_GAIN,3,PID_MOT_ALT_H);
 
 //control parameters
 
-float reg_set_rl_ang = 0.0f;
-int reg_set_speed = 0;
-float reg_set_h = 130.0f;
+float reg_set_rl_ang = 0.0f;  // setpoint angle
+int reg_set_speed = 0;    // speed 
+float reg_set_h = 130.0f; // altitude
 
 
 //motor controls
@@ -567,10 +571,9 @@ AFS_SEL Full Scale Range LSB Sensitivity
 
 
   error = compass.SetMeasurementMode(Measurement_Continuous); // Set the measurement mode to Continuous
-  if(error != 0) // If there is an error, print it out.
-    Serial.println(compass.GetErrorText(error));
+ 
 
-  // configure Arduino LED for
+  // configure Arduino pins
 #endif
   pinMode(DBGPIN, OUTPUT);
   digitalWrite(DBGPIN,LOW);
@@ -588,7 +591,7 @@ AFS_SEL Full Scale Range LSB Sensitivity
   digitalWrite(DROP_PIN,LOW);
 #endif
 
-
+// reset structs
   setImuStruct(&ar,(uint16_t)0,(uint16_t)0,(uint16_t)0);
   setImuStruct(&gr,(uint16_t)0,(uint16_t)0,(uint16_t)0);
 
@@ -611,6 +614,7 @@ void loop() {
   t[1] = micros();
 #endif
 
+
   if(imuready){
 
 #if DBGOUTMODE == 9
@@ -628,15 +632,11 @@ void loop() {
   }//imuready
 
 
-
-
   if(imudataready){
 
 
-
-
     //  digitalWrite(DBGPIN,1);
-    //filtering
+    //filtering and unit conversion
 #if ACCEL_ENABLE == 1    
     af.x = lowpass_accel_x.step(((float)ar.x/(float)(1<<14)));
     af.y = lowpass_accel_y.step(((float)ar.y/(float)(1<<14)));
@@ -740,10 +740,7 @@ void loop() {
 #endif
 
   }//imudata 
-  // these methods (and a few others) are also available
-  //accelgyro.getAcceleration(&ax, &ay, &az);
-  //accelgyro.getRotation(&gx, &gy, &gz);
-
+  
 
   /*----------------------------------------------------------------------------------------------------------------------------*/
 
@@ -752,16 +749,16 @@ void loop() {
 
 
     // Retrive the raw values from the compass (not scaled).
-    //     MagnetometerRaw raw = compass.ReadRawAxis();
+    // MagnetometerRaw raw = compass.ReadRawAxis();
     // Retrived the scaled values from the compass (scaled to the configured scale).
 
-    //   digitalWrite(DBGPIN,1);
+    
     mr = compass.ReadScaledAxis();
 
 
     magndataready = 1;
     magnready = 0;
-    //   digitalWrite(DBGPIN,0);  
+    
   }//magnready
 
   if(magndataready){
@@ -795,23 +792,13 @@ void loop() {
 
     }  
 
-
-    // mf.YAxis =  lowpass_magn_y.step(mr.YAxis);
-
-
-    // mf.ZAxis =  lowpass_magn_z.step(mr.ZAxis);
-
-    //     int MilliGauss_OnThe_XAxis = scaled.XAxis;// (or YAxis, or ZAxis)
-
     // Calculate magn_head_rad when the magnetometer is level, then correct for signs of axis.
     magn_head_rad = atan2(mf.YAxis, mf.XAxis);
 
     // Once you have your magn_head_rad, you must then add your 'Declination Angle', which is the 'Error' of the magnetic field in yo
 
     // Find yours here: http://www.magnetic-declination.com/
-    // Mine is: 2� 37' W, which is 2.617 Degrees, or (which we need) 0.0456752665 radians, I will use 0.0457
-    // If you cannot find your Declination, comment out these two lines, your compass will be slightly off.
-
+    
 
     // Muenchen: 2°27' -> 0.04276056
     // declinationangle  
@@ -825,7 +812,7 @@ void loop() {
     if(magn_head_rad > PI)
       magn_head_rad -= 2*PI;
 
-    // Convert radians to degrees for readability.
+    // Convert radians to degrees.
     magn_head_deg = rad2deg(magn_head_rad);// * 180/M_PI; 
 
     //moving avg
@@ -834,6 +821,7 @@ void loop() {
 
     magn_head_rad_avg_cnt++;
 
+// calculate and store the offset if requested
     if(magn_head_rad_avg_cnt == 50){
       if(get_magn_offset){
 
@@ -885,6 +873,7 @@ void loop() {
 
     wd_ults_avg += ((ults_h - wd_ults_avg)/((float)(wd_ults_avg_cnt+1)));
     wd_ults_avg_cnt++;
+   
     if( wd_ults_avg_cnt == WD_ULTS_AVG_MAXCOUNT){
       //Serial.println(wd_ults_avg);
       if( (wd_ults_avg > WD_ULTS_MAX || wd_ults_avg < WD_ULTS_MIN) && main_enable){
@@ -899,8 +888,6 @@ void loop() {
 
 #endif
       }
-
-
 
       wd_ults_avg = 0;
       wd_ults_avg_cnt = 1;
